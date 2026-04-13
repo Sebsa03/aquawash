@@ -37,8 +37,8 @@ export default function Landing() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-secondary" onClick={() => navigate('/demo')}
-            style={{ fontSize: 13, padding: '7px 16px' }}>
-            Ver demo
+            style={{ fontSize: 13, padding: '7px 16px', background: 'transparent', border: '1px solid var(--acc2)', color: 'var(--acc2)' }}>
+            Ver Demo
           </button>
           <button className="btn-secondary" onClick={() => navigate('/login')}
             style={{ fontSize: 13, padding: '7px 16px' }}>
@@ -46,7 +46,7 @@ export default function Landing() {
           </button>
           <button className="btn-primary" onClick={() => navigate('/registro')}
             style={{ fontSize: 13, padding: '7px 16px' }}>
-            Probar gratis
+            Crear nueva cuenta
           </button>
         </div>
       </nav>
@@ -85,12 +85,12 @@ export default function Landing() {
           <button className="btn-primary"
             style={{ fontSize: 15, padding: '14px 28px', borderRadius: 8 }}
             onClick={() => navigate('/registro')}>
-            Comenzar gratis — 7 días
+            Crear nueva cuenta — 7 días gratis
           </button>
           <button className="btn-secondary"
-            style={{ fontSize: 15, padding: '14px 28px', borderRadius: 8 }}
+            style={{ fontSize: 15, padding: '14px 28px', borderRadius: 8, border: '1px solid var(--acc2)', color: 'var(--acc2)', background: 'transparent' }}
             onClick={() => navigate('/demo')}>
-            Ver demo
+            Explorar Demo Interactivo
           </button>
         </div>
 
@@ -166,22 +166,7 @@ export default function Landing() {
           <p style={{ color: 'var(--mut)' }}>7 días de prueba gratis en cualquier plan</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 660, margin: '0 auto' }}>
-          {/* Básico */}
-          <div className="card" style={{ margin: 0 }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', letterSpacing: 2, marginBottom: 4 }}>Básico</div>
-            <div style={{ fontSize: 12, color: 'var(--mut)', marginBottom: 10 }}>Para lavaderos que están comenzando</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.2rem', marginBottom: 2 }}>$35.000</div>
-            <div style={{ fontSize: 12, color: 'var(--mut)', marginBottom: 16 }}>COP / mes</div>
-            {['Registro ilimitado de lavados','Historial y filtros','Estadísticas','Gestión de empleados','Ranking semanal'].map(i => (
-              <div key={i} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ color: 'var(--acc3)', fontWeight: 700 }}>✓</span>{i}
-              </div>
-            ))}
-            <button className="btn-secondary" style={{ width: '100%', marginTop: 16 }} onClick={() => navigate('/registro')}>
-              Empezar gratis
-            </button>
-            <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mut)', marginTop: 6 }}>7 días gratis — sin tarjeta</div>
-          </div>
+          {/* Básico removido */}
 
           {/* Pro */}
           <div className="card" style={{ margin: 0, borderColor: 'var(--acc)', background: 'rgba(0,212,255,0.04)' }}>
@@ -200,7 +185,7 @@ export default function Landing() {
               </div>
             ))}
             <button className="btn-primary" style={{ width: '100%', marginTop: 16 }} onClick={() => navigate('/registro')}>
-              Empezar gratis
+              Crear nueva cuenta
             </button>
             <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--mut)', marginTop: 6 }}>7 días gratis — sin tarjeta</div>
           </div>
@@ -215,7 +200,7 @@ export default function Landing() {
         <p style={{ color: 'var(--mut)', marginBottom: 28 }}>Únete a los lavaderos que ya controlan sus ingresos con AquaWash</p>
         <button className="btn-primary" style={{ fontSize: 15, padding: '14px 28px', borderRadius: 8 }}
           onClick={() => navigate('/registro')}>
-          Crear cuenta gratis
+          Crear nueva cuenta
         </button>
       </section>
 

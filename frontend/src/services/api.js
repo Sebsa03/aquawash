@@ -31,6 +31,7 @@ async function request(method, path, body = null) {
 // AUTH
 export const login = (email, password) =>
   request('POST', '/auth/login', { email, password })
+export const verifyPinReq = (pin) => request('POST', '/auth/verify-pin', { pin })
 
 // LAVADOS
 export const getLavados = (params = {}) => {
@@ -39,6 +40,8 @@ export const getLavados = (params = {}) => {
 }
 export const crearLavado   = (data) => request('POST', '/lavados/', data)
 export const eliminarLavado = (id)  => request('DELETE', `/lavados/${id}`)
+export const actualizarEstadoLavado = (id, estado, motivo = null) => request('PATCH', `/lavados/${id}/estado`, { estado, motivo_cancelacion: motivo })
+export const actualizarLavado = (id, data) => request('PATCH', `/lavados/${id}`, data)
 
 // EMPLEADOS
 export const getEmpleados    = ()       => request('GET', '/empleados/')
@@ -55,8 +58,19 @@ export const eliminarAdicional   = (id)             => request('DELETE', `/adici
 export const getEstadisticasHoy = ()        => request('GET', '/estadisticas/hoy')
 export const getResumen         = (periodo) => request('GET', `/estadisticas/resumen?periodo=${periodo}`)
 export const getPorTipo         = (periodo) => request('GET', `/estadisticas/por-tipo?periodo=${periodo}`)
+export const getTendencia       = ()        => request('GET', '/estadisticas/tendencia')
 export const getRanking         = (periodo) => request('GET', `/estadisticas/ranking?periodo=${periodo}`)
+export const getRankingDetalle  = (periodo) => request('GET', `/estadisticas/ranking-detalle?periodo=${periodo}`)
+export const getCancelados      = (periodo) => request('GET', `/estadisticas/cancelados?periodo=${periodo}`)
 export const getPlacas          = (buscar = '') => request('GET', `/estadisticas/placas${buscar ? `?buscar=${buscar}` : ''}`)
 
 export const registro = (datos) =>
   request('POST', '/auth/registro', datos)
+
+// CONFIG / VEHÍCULOS CATÁLOGO
+export const getConfig           = ()              => request('GET',    '/config/')
+export const getVehiculos        = ()              => request('GET',    '/config/vehiculos')
+export const crearVehiculo       = (data)          => request('POST',   '/config/vehiculos', data)
+export const actualizarVehiculo  = (id, data)      => request('PATCH',  `/config/vehiculos/${id}`, data)
+export const eliminarVehiculo    = (id)            => request('DELETE', `/config/vehiculos/${id}`)
+export const actualizarPerfil    = (data)          => request('PATCH',  '/config/perfil', data)

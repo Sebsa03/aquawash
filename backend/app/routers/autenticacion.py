@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.database import get_db
-from app.routers.auth import verificar_password, crear_token, hashear_password
-from pydantic import BaseModel
 from typing import Optional
 from datetime import date, timedelta
+from pydantic import BaseModel
+from app.routers.auth import verificar_password, crear_token, hashear_password, get_lavadero_actual
 
 router = APIRouter()
 
@@ -11,13 +11,16 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class PinVerifyRequest(BaseModel):
+    pin: str
+
 class RegisterRequest(BaseModel):
     nombre: str
     ciudad: Optional[str] = None
     telefono: Optional[str] = None
     email: str
     password: str
-    plan: str = "basico"
+    plan: str = "pro"
 
 @router.post("/login")
 async def login(datos: LoginRequest, db=Depends(get_db)):
@@ -45,6 +48,21 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
         print(f"ERROR LOGIN: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/verify-pin")
+async def verify_pin(datos: PinVerifyRequest, db=Depends(get_db), lavadero_id: int = Depends(get_lavadero_actual)):
+    fila = await db.fetchrow("SELECT pin_dueno, pin_operario FROM lavaderos WHERE id = $1", lavadero_id)
+    if not fila:
+        raise HTTPException(status_code=404, detail="Lavadero no encontrado")
+        
+    pin_ingresado = datos.pin.strip()
+    
+    if pin_ingresado == fila["pin_dueno"]:
+        return {"rol": "dueno"}
+    elif pin_ingresado == fila["pin_operario"]:
+        return {"rol": "operario"}
+    else:
+        raise HTTPException(status_code=401, detail="PIN Incorrecto")
+
 @router.post("/registro", status_code=201)
 async def registro(datos: RegisterRequest, db=Depends(get_db)):
     existe = await db.fetchrow(
@@ -53,8 +71,8 @@ async def registro(datos: RegisterRequest, db=Depends(get_db)):
     )
     if existe:
         raise HTTPException(status_code=400, detail="Ya existe una cuenta con ese correo")
-    if datos.plan not in ["basico", "pro"]:
-        datos.plan = "basico"
+    if datos.plan not in ["pro"]:
+        datos.plan = "pro"
     trial_hasta = date.today() + timedelta(days=7)
     lavadero = await db.fetchrow(
         """

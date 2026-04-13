@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import conectar, desconectar
-from app.routers import autenticacion, lavados, empleados, adicionales, estadisticas
+from app.routers import autenticacion, lavados, empleados, adicionales, estadisticas, config
 
 app = FastAPI(title="AquaWash API", version="1.0.0")
 
@@ -26,6 +26,7 @@ app.include_router(lavados.router,       prefix="/lavados",      tags=["Lavados"
 app.include_router(empleados.router,     prefix="/empleados",    tags=["Empleados"])
 app.include_router(adicionales.router,   prefix="/adicionales",  tags=["Adicionales"])
 app.include_router(estadisticas.router,  prefix="/estadisticas", tags=["Estadisticas"])
+app.include_router(config.router,        prefix="/config",       tags=["Configuracion"])
 
 @app.get("/")
 async def raiz():

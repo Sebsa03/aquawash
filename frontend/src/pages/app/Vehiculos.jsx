@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { getPlacas } from '../../services/api'
 import { useToast } from '../../components/Toast'
 import Badge from '../../components/Badge'
@@ -51,40 +51,36 @@ export default function Vehiculos() {
       ) : filtrados.length === 0 ? (
         <div className="empty-state">🚗 Sin vehículos registrados</div>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Placa</th>
-                <th>Tipo</th>
-                <th>Lavados</th>
-                <th>Primer visita</th>
-                <th>Último lavado</th>
-                <th>Total gastado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrados.map(v => (
-                <tr key={v.placa}>
-                  <td>
-                    <span className="mono" style={{ fontWeight:700 }}>{v.placa}</span>
-                    {v.total_lavados >= 5 && (
-                      <span className="frecuente-badge">★ FRECUENTE</span>
-                    )}
-                  </td>
-                  <td><Badge tipo={v.tipo_vehiculo} /></td>
-                  <td>
-                    <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:'1.1rem', color:'var(--acc)' }}>
-                      {v.total_lavados}
-                    </span>
-                  </td>
-                  <td className="mono text-muted" style={{ fontSize:11 }}>{v.primer_lavado}</td>
-                  <td className="mono text-muted" style={{ fontSize:11 }}>{v.ultimo_lavado}</td>
-                  <td className="mono text-green" style={{ fontWeight:600 }}>${fmt(v.total_gastado)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+          {filtrados.map(v => (
+            <div key={v.placa} className="card" style={{ padding: '1.2rem', marginBottom: 0, position: 'relative', overflow: 'hidden' }}>
+              {v.total_lavados >= 5 && (
+                <div style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,215,0,0.2)', color: '#ffd700', padding: '4px 12px', fontSize: '10px', fontWeight: 'bold', borderBottomLeftRadius: '8px' }}>
+                  ★ FRECUENTE
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <span className="mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', textShadow: '0 0 10px rgba(255,255,255,0.2)' }}>{v.placa}</span>
+                <Badge tipo={v.tipo_vehiculo} />
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--mut)', textTransform: 'uppercase', letterSpacing: 1 }}>Lavados Totales</div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:'1.8rem', color:'var(--acc)' }}>{v.total_lavados}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--mut)', textTransform: 'uppercase', letterSpacing: 1 }}>Inversión</div>
+                  <div style={{ fontFamily:"'DM Mono',monospace", fontSize:'1.2rem', color:'var(--acc3)', fontWeight: 'bold' }}>${fmt(v.total_gastado)}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Mono', monospace" }}>
+                <span>1ra vez: {v.primer_lavado}</span>
+                <span>Última: {v.ultimo_lavado}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

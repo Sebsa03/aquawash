@@ -5,6 +5,7 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [token, setToken]     = useState(localStorage.getItem('aw_token'))
+  const [role, setRole]       = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
 
@@ -29,10 +30,11 @@ export function AuthProvider({ children }) {
   function logout() {
     localStorage.removeItem('aw_token')
     setToken(null)
+    setRole(null)
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading, error }}>
+    <AuthContext.Provider value={{ isAuthenticated, role, setRole, login, logout, loading, error }}>
       {children}
     </AuthContext.Provider>
   )

@@ -43,17 +43,12 @@ export default function Login() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
-        <div style={{ marginTop:16, textAlign:'center', fontSize:12, color:'var(--mut)' }}>
-          No tienes cuenta? <Link to="/registro" style={{ color:'var(--acc)' }}>Registrate</Link>
+        <div style={{ marginTop:16 }}>
+          <button className="btn-secondary" type="button" onClick={() => navigate('/registro')} style={{ width:'100%', padding:'0.75rem', border: '1px solid var(--acc2)', color: 'var(--acc2)', background: 'transparent' }}>
+            Crear nueva cuenta
+          </button>
         </div>
-        <div style={{ marginTop:8, textAlign:'center' }}>
-          <Link to="/demo" style={{ color:'var(--acc2)', fontSize:12 }}>Ver demo sin registro</Link>
-        </div>
-        <div style={{ marginTop:20, padding:'10px 12px', background:'var(--sur2)', borderRadius:8, fontSize:11, color:'var(--mut)', textAlign:'center' }}>
-          <div style={{ color:'var(--acc)', fontWeight:600, marginBottom:4 }}>Demo rapido</div>
-          <div>demo@aquawash.com</div>
-          <div>demo1234</div>
-        </div>
+        {/* Bloque demo y credenciales eliminados */}
       </div>
     </div>
   )

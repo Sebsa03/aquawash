@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.database import get_db
-from app.auth import get_lavadero_actual
+from app.routers.auth import get_lavadero_actual
 from app.models.schemas import EmpleadoCrear, EmpleadoRespuesta
 from typing import List
 
