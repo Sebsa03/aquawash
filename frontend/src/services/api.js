@@ -42,6 +42,8 @@ export const crearLavado   = (data) => request('POST', '/lavados/', data)
 export const eliminarLavado = (id)  => request('DELETE', `/lavados/${id}`)
 export const actualizarEstadoLavado = (id, estado, motivo = null) => request('PATCH', `/lavados/${id}/estado`, { estado, motivo_cancelacion: motivo })
 export const actualizarLavado = (id, data) => request('PATCH', `/lavados/${id}`, data)
+export const getBuscarPlaca = (placa) => request('GET', `/lavados/placa/${encodeURIComponent(placa)}`)
+export const getSugerenciasPlaca = (q) => request('GET', `/lavados/sugerencias-placa?q=${encodeURIComponent(q)}`)
 
 // EMPLEADOS
 export const getEmpleados    = ()       => request('GET', '/empleados/')
@@ -59,6 +61,10 @@ export const getEstadisticasHoy = ()        => request('GET', '/estadisticas/hoy
 export const getResumen         = (periodo) => request('GET', `/estadisticas/resumen?periodo=${periodo}`)
 export const getPorTipo         = (periodo) => request('GET', `/estadisticas/por-tipo?periodo=${periodo}`)
 export const getTendencia       = ()        => request('GET', '/estadisticas/tendencia')
+export const getTendenciaDiaria = (periodo) => request('GET', `/estadisticas/tendencia-diaria?periodo=${periodo}`)
+export const getHorasPico       = (periodo) => request('GET', `/estadisticas/horas-pico?periodo=${periodo}`)
+export const getRecurrentes     = ()        => request('GET', '/estadisticas/recurrentes')
+export const getServicios       = (periodo) => request('GET', `/estadisticas/servicios?periodo=${periodo}`)
 export const getRanking         = (periodo) => request('GET', `/estadisticas/ranking?periodo=${periodo}`)
 export const getRankingDetalle  = (periodo) => request('GET', `/estadisticas/ranking-detalle?periodo=${periodo}`)
 export const getCancelados      = (periodo) => request('GET', `/estadisticas/cancelados?periodo=${periodo}`)
@@ -74,3 +80,23 @@ export const crearVehiculo       = (data)          => request('POST',   '/config
 export const actualizarVehiculo  = (id, data)      => request('PATCH',  `/config/vehiculos/${id}`, data)
 export const eliminarVehiculo    = (id)            => request('DELETE', `/config/vehiculos/${id}`)
 export const actualizarPerfil    = (data)          => request('PATCH',  '/config/perfil', data)
+
+// CAJA
+export const getResumenCaja = (inicio, fin) => {
+  const params = new URLSearchParams()
+  if (inicio) params.append('fecha_inicio', inicio)
+  if (fin) params.append('fecha_fin', fin)
+  return request('GET', `/caja/resumen?${params.toString()}`)
+}
+export const getEgresos = (fecha) => {
+  const params = new URLSearchParams()
+  if (fecha) params.append('fecha', fecha)
+  return request('GET', `/caja/egresos?${params.toString()}`)
+}
+export const crearEgreso = (concepto, monto) => request('POST', '/caja/egresos', { concepto, monto: parseInt(monto) })
+export const eliminarEgreso = (id) => request('DELETE', `/caja/egresos/${id}`)
+
+// CIERRE DE CAJA
+export const getCierreCaja = (fecha) => request('GET', `/caja/cierre/${fecha}`)
+export const getCierresCaja = () => request('GET', '/caja/cierres')
+export const crearCierreCaja = (data) => request('POST', '/caja/cierre', data)

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distribución de la Aplicación — AquaWash v2.0</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap');
+
+    :root {
+      --green:    #2e7d32;
+      --green-dk: #1b5e20;
+      --green-lt: #4caf50;
+      --acc:       #00c853;
+      --bg:        #f4f4f4;
+      --card:      #ffffff;
+      --txt:       #1a1a1a;
+      --mut:       #555;
+      --border:    #c8e6c9;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt); min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--green);
+      color: white;
+      padding: 2rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      letter-spacing: 3px;
+    }
+    .badge {
+      background: white; color: var(--green);
+      font-weight: 900; font-size: 1.5rem;
+      width: 60px; height: 60px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px;
+    }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 1200px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.8rem;
+      box-shadow: 0 2px 10px rgba(0,100,0,0.06);
+    }
+    .card.full { grid-column: 1 / -1; }
+
+    .card h2 {
+      color: var(--green);
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .card h2 .icon { margin-right: 6px; }
+
+    /* ── LIST ITEMS ── */
+    ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: var(--txt);
+    }
+    li .em { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    li strong { color: var(--green-dk); }
+    li span.sub { display: block; color: var(--mut); font-size: 0.8rem; margin-top: 2px; }
+
+    /* ── HIGHLIGHT CHIP ── */
+    .chip {
+      display: inline-block;
+      background: var(--green); color: white;
+      font-size: 0.72rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-left: 4px;
+    }
+    .chip.blue  { background: #1565c0; }
+    .chip.amber { background: #e65100; }
+
+    /* ── FLOW DIAGRAM ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-top: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      background: var(--green);
+      color: white;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-align: center;
+      min-width: 110px;
+    }
+    .flow-step .sub { font-size: 0.68rem; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+    .arrow {
+      font-size: 1.3rem; color: var(--green); padding: 0 6px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      color: var(--mut);
+      font-size: 0.78rem;
+      padding: 1.5rem 0 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <h1>💧 DISTRIBUCIÓN DE LA APLICACIÓN</h1>
+    <div style="text-align:right">
+      <div class="badge">AW</div>
+      <div style="font-size:0.8rem;margin-top:6px;opacity:0.85">AquaWash v2.0</div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <!-- FILA 1: Servidores + Software interno -->
+    <div class="grid">
+
+      <!-- SERVIDORES -->
+      <div class="card">
+        <h2><span class="icon">🖥️</span>Servidores</h2>
+        <ul>
+          <li>
+            <span class="em">☁️</span>
+            <div>
+              <strong>Servidor en la nube</strong>
+              <span class="sub">Alojamiento del Backend (API) y Base de Datos en servicios gestionados (Render / VPS / AWS)</span>
+            </div>
+          </li>
+          <li>
+            <span class="em">💻</span>
+            <div>
+              <strong>Dispositivo físico / local</strong>
+              <span class="sub">Computadores, tabletas o celulares del lavadero — solo requieren un navegador web</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- SOFTWARE INTERNO -->
+      <div class="card">
+        <h2><span class="icon">⚙️</span>Software y Componentes Internos</h2>
+        <ul>
+          <li><span class="em">💿</span><div><strong>AQUAWASH — Sistema de Gestión de Lavaderos</strong><span class="sub">Plataforma SaaS Web para administración operativa y financiera</span></div></li>
+          <li><span class="em">🗄️</span><div><strong>Base de Datos</strong> <span class="chip">PostgreSQL</span><span class="sub">Almacena lavados, empleados, finanzas y configuraciones del lavadero</span></div></li>
+          <li><span class="em">⚙️</span><div><strong>Backend</strong> <span class="chip">Python / FastAPI</span><span class="sub">Lógica de negocio asíncrona: cálculo de precios, autenticación y reglas de acceso</span></div></li>
+          <li><span class="em">🔗</span><div><strong>API REST</strong> <span class="chip blue">JSON / JWT</span><span class="sub">Protocolo de comunicación estándar entre el servidor y la interfaz web</span></div></li>
+          <li><span class="em">🌐</span><div><strong>Frontend</strong> <span class="chip">React / Vite</span><span class="sub">Interfaz gráfica de usuario — accesible en cualquier dispositivo con navegador</span></div></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FILA 2: Módulos + Roles -->
+    <div class="grid" style="margin-top: 1.5rem;">
+
+      <!-- MÓDULOS DE LA APP -->
+      <div class="card">
+        <h2><span class="icon">📦</span>Módulos Principales (App)</h2>
+        <ul>
+          <li><span class="em">💻</span><div><strong>Dashboard</strong><span class="sub">Vista resumen de operaciones del día en tiempo real</span></div></li>
+          <li><span class="em">💻</span><div><strong>Nuevo Lavado</strong><span class="sub">Registro de vehículos con selección de tipo, suciedad y adicionales</span></div></li>
+          <li><span class="em">💻</span><div><strong>Historial</strong><span class="sub">Seguimiento de estados: Espera, Lavando, Terminado, Entregado, Cancelado</span></div></li>
+          <li><span class="em">💻</span><div><strong>Estadísticas</strong><span class="sub">Gráficas de ingresos diarios, tipos de vehículo y ranking de empleados</span></div></li>
+          <li><span class="em">💻</span><div><strong>Vehículos</strong><span class="sub">Catálogo de tipos de vehículos y precios por categoría</span></div></li>
+          <li><span class="em">💻</span><div><strong>Empleados</strong><span class="sub">Gestión de personal y asignación de lavados</span></div></li>
+          <li><span class="em">💻</span><div><strong>Configuración</strong><span class="sub">Perfil del lavadero, precios base y adicionales de limpieza</span></div></li>
+          <li><span class="em">💻</span><div><strong>Auditoría / Reportes</strong><span class="sub">Resúmenes financieros y de rendimiento por período</span></div></li>
+        </ul>
+      </div>
+
+      <!-- USUARIOS Y ACCESOS -->
+      <div class="card">
+        <h2><span class="icon">👤</span>Roles de Usuarios y Acceso</h2>
+        <ul>
+          <li>
+            <span class="em">👔</span>
+            <div>
+              <strong>Administrador / Dueño</strong> <span class="chip">Acceso total</span>
+              <span class="sub">Gestiona finanzas, configuración, empleados y auditorías. Requiere PIN de seguridad.</span>
+            </div>
+          </li>
+          <li>
+            <span class="em">👷</span>
+            <div>
+              <strong>Operario de Pista</strong> <span class="chip amber">Acceso limitado</span>
+              <span class="sub">Registra nuevos lavados y actualiza estados. Vista capada, sin acceso a cifras ni configuración.</span>
+            </div>
+          </li>
+          <li>
+            <span class="em">🔒</span>
+            <div>
+              <strong>PinLock de Seguridad</strong>
+              <span class="sub">Sistema de bloqueo local estilo cajero que impide que el operador abandone su sesión sin autorización del dueño.</span>
+            </div>
+          </li>
+          <li>
+            <span class="em">📱</span>
+            <div>
+              <strong>Acceso Móvil (Responsive)</strong>
+              <span class="sub">Sin instalación — operarios gestionan desde su celular vía navegador web</span>
+            </div>
+          </li>
+          <li>
+            <span class="em">🎯</span>
+            <div>
+              <strong>Entorno Demo (Prospectos)</strong>
+              <span class="sub">Acceso de solo lectura y prueba con datos simulados y límites anti-spam para visitantes del Landing Page.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FILA 3: Flujo de Datos -->
+    <div class="card full" style="margin-top: 1.5rem;">
+      <h2><span class="icon">🔄</span>Flujo de Comunicación de la Aplicación</h2>
+      <div class="flow">
+        <div class="flow-step">🌐 Navegador<div class="sub">React (SPA)</div></div>
+        <span class="arrow">→</span>
+        <div class="flow-step">🔗 API REST<div class="sub">Solicitud JSON</div></div>
+        <span class="arrow">→</span>
+        <div class="flow-step">⚙️ FastAPI<div class="sub">Lógica & JWT</div></div>
+        <span class="arrow">→</span>
+        <div class="flow-step">🗄️ PostgreSQL<div class="sub">Persistencia SQL</div></div>
+        <span class="arrow">←</span>
+        <div class="flow-step">📦 Respuesta<div class="sub">JSON con datos</div></div>
+        <span class="arrow">←</span>
+        <div class="flow-step">🖥️ Operador<div class="sub">Visualización</div></div>
+      </div>
+    </div>
+
+    <!-- FILA 4: Tecnologías -->
+    <div class="card full" style="margin-top: 1.5rem;">
+      <h2><span class="icon">💻</span>Lenguajes y Tecnologías Utilizadas</h2>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:0.5rem;">
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">🐍</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">Python 3.10+</div><div style="color:var(--mut);font-size:0.72rem">Backend</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">⚡</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">FastAPI</div><div style="color:var(--mut);font-size:0.72rem">Framework API</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">🐘</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">PostgreSQL</div><div style="color:var(--mut);font-size:0.72rem">Base de Datos</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">⚛️</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">React 18</div><div style="color:var(--mut);font-size:0.72rem">UI Framework</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">⚡</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">Vite</div><div style="color:var(--mut);font-size:0.72rem">Bundler</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">📜</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">JavaScript</div><div style="color:var(--mut);font-size:0.72rem">Lenguaje Frontend</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">🎨</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">CSS3 Nativo</div><div style="color:var(--mut);font-size:0.72rem">Glassmorphism UI</div>
+        </div>
+        <div style="background:#e8f5e9;border:1.5px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:110px">
+          <div style="font-size:1.8rem">🔐</div><div style="font-weight:700;color:var(--green-dk);font-size:0.85rem">JWT</div><div style="color:var(--mut);font-size:0.72rem">Autenticación</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    AquaWash v2.0 — Sistema Premium de Gestión Automotriz &nbsp;|&nbsp; Todos los derechos reservados.
+  </footer>
+
+</body>
+</html>

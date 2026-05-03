@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getEmpleados, crearEmpleado, eliminarEmpleado, getRankingDetalle } from '../../services/api'
+import { VEHICLE_ICONS } from '../../utils/constants'
 import { useToast } from '../../components/Toast'
 
 function fmt(n) { return Number(n || 0).toLocaleString('es-CO') }
@@ -15,7 +16,7 @@ export default function Empleados() {
   const [loading, setLoading]     = useState(false)
   const [selectedEmp, setSelectedEmp] = useState(null)
 
-  const ICONS = { moto:'🏍', carro:'🚗', furgon:'🚐', camion:'🚚', bus:'🚌' }
+  const ICONS = VEHICLE_ICONS
 
   useEffect(() => { cargarEmpleados() }, [])
   useEffect(() => { cargarRanking()   }, [periodoRank])
@@ -111,8 +112,8 @@ export default function Empleados() {
 
   return (
     <div>
-      <div style={{ marginBottom:'1.2rem' }}>
-        <h1 style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:'1.6rem', letterSpacing:2 }}>
+      <div style={{ marginBottom:'1.5rem' }}>
+        <h1 style={{ fontFamily:"'Outfit',sans-serif", fontSize:'clamp(1.6rem, 5vw, 2.2rem)', letterSpacing:0.5, margin: 0, color: 'var(--acc)', textShadow: '0 0 15px rgba(0,212,255,0.3)' }}>
           Empleados
         </h1>
       </div>
@@ -121,9 +122,9 @@ export default function Empleados() {
         
         {/* COL IZQUIERDA: Gestionar y Expediente */}
         <div>
-          <div className="card">
-            <div className="card-title">👷 Directorio de Empleados</div>
-            <p style={{ fontSize:12, color:'var(--mut)', marginBottom: '1rem' }}>Haz clic en un empleado para ver su rendimiento abajo.</p>
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            <div className="card-title" style={{ margin: 0, marginBottom: '0.5rem' }}>👷 Directorio de Empleados</div>
+            <p style={{ fontSize:13, color:'var(--mut)', marginBottom: '1rem', fontFamily: "'Inter', sans-serif" }}>Haz clic en un empleado para ver su rendimiento abajo.</p>
             
             <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:'1rem' }}>
               <input className="input-base" style={{ flex:1, minWidth:180 }}
@@ -168,7 +169,7 @@ export default function Empleados() {
 
           {/* EXPEDIENTE SELECCIONADO */}
           {selectedEmp && (
-            <div className="card" style={{ marginTop: '1.2rem', background: 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3))', borderColor: 'var(--acc)' }}>
+            <div className="glass-panel" style={{ marginTop: '1.5rem', padding: '1.5rem', border: '1px solid var(--acc)', boxShadow: '0 0 20px rgba(0,212,255,0.15)' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div className="card-title" style={{ color: 'var(--acc)', margin: 0 }}>Expediente</div>
@@ -257,8 +258,8 @@ export default function Empleados() {
 
         {/* COL DERECHA: Ranking Limpio */}
         <div>
-          <div className="card" style={{ height: '100%' }}>
-            <div className="card-title">🏆 Ranking Global</div>
+          <div className="glass-panel" style={{ height: '100%', padding: '1.5rem' }}>
+            <div className="card-title" style={{ margin: 0, marginBottom: '1rem' }}>🏆 Ranking Global</div>
             <div className="tabs">
               {[
                 { v:'hoy',    l:'Hoy' },

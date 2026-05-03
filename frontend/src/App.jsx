@@ -11,10 +11,10 @@ import Dashboard    from './pages/app/Dashboard'
 import Nuevo        from './pages/app/Nuevo'
 import Historial    from './pages/app/Historial'
 import Estadisticas from './pages/app/Estadisticas'
-import Auditoria    from './pages/app/Auditoria'
 import Vehiculos    from './pages/app/Vehiculos'
 import Empleados    from './pages/app/Empleados'
 import Config       from './pages/app/Config'
+import Caja         from './pages/app/Caja'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -41,10 +41,10 @@ export default function App() {
             <Route path="nuevo"        element={<Nuevo />} />
             <Route path="historial"    element={<Historial />} />
             <Route path="estadisticas" element={<Estadisticas />} />
-            <Route path="auditoria"    element={<Auditoria />} />
             <Route path="vehiculos"    element={<Vehiculos />} />
             <Route path="empleados"    element={<Empleados />} />
             <Route path="config"       element={<Config />} />
+            <Route path="caja"         element={<Caja />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

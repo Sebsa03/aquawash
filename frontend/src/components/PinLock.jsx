@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { verifyPinReq } from '../services/api'
 import { useToast } from './Toast'
@@ -8,24 +8,16 @@ export default function PinLock() {
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
   const toast = useToast()
+  const inputRef = useRef(null)
 
-  const handleInput = (digit) => {
-    if (pin.length < 4) {
-      setPin(p => p + digit)
-      setError(false)
-    }
-  }
-
-  const handleDelete = () => {
-    setPin(p => p.slice(0, -1))
-    setError(false)
-  }
-
-  // Auto submit when 4 digits are entered
+  // Auto-focus cuando aparece la pantalla
   useEffect(() => {
-    if (pin.length === 4) {
-      verify()
-    }
+    if (!role) setTimeout(() => inputRef.current?.focus(), 100)
+  }, [role])
+
+  // Auto-submit al llegar a 4 dígitos
+  useEffect(() => {
+    if (pin.length === 4) verify()
   }, [pin])
 
   const verify = async () => {
@@ -38,28 +30,17 @@ export default function PinLock() {
     } catch (e) {
       setError(true)
       toast?.('PIN Incorrecto')
-      setTimeout(() => setPin(''), 500) // Clear pin after half a second
+      setTimeout(() => { setPin(''); setError(false) }, 500)
     }
   }
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (role) return
-      if (e.key >= '0' && e.key <= '9') {
-        handleInput(e.key)
-      } else if (e.key === 'Backspace') {
-        handleDelete()
-      } else if (e.key === 'Enter') {
-        verify()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [pin, role])
+  const handleChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+    setPin(val)
+    setError(false)
+  }
 
-  const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 'Borrar', 0, 'Entrar']
-
-  if (role) return null // Return empty if role is verified
+  if (role) return null
 
   return (
     <div style={{
@@ -69,62 +50,57 @@ export default function PinLock() {
       padding: '2rem'
     }}>
       <div style={{ width: '100%', maxWidth: '320px', textAlign: 'center' }}>
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3rem', letterSpacing: 2, color: 'var(--acc)', margin: '0 0 1rem 0' }}>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '3rem', letterSpacing: 2, color: 'var(--acc)', margin: '0 0 0.5rem 0' }}>
           BLOQUEO DE SISTEMA
         </h1>
-        <p style={{ color: 'var(--mut)', marginBottom: '2rem' }}>Ingrese PIN para Operar o Administrar.</p>
-        
-        {/* Input Dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '3rem', animation: error ? 'shake 0.4s' : 'none' }}>
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} style={{
-              width: 20, height: 20, borderRadius: '50%',
-              background: i < pin.length ? 'var(--acc)' : 'transparent',
-              border: `2px solid ${i < pin.length ? 'var(--acc)' : 'var(--mut)'}`,
-              transition: 'all 0.2s',
-              boxShadow: i < pin.length ? '0 0 10px var(--acc)' : 'none'
-            }} />
-          ))}
+        <p style={{ color: 'var(--mut)', marginBottom: '2rem' }}>
+          Ingrese PIN para Operar o Administrar.
+        </p>
+
+        {/* Campo de texto PIN */}
+        <div style={{ animation: error ? 'shake 0.4s' : 'none' }}>
+          <input
+            ref={inputRef}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            value={pin}
+            onChange={handleChange}
+            onKeyDown={e => e.key === 'Enter' && verify()}
+            placeholder="• • • •"
+            autoComplete="one-time-code"
+            style={{
+              width: '100%', padding: '1rem', textAlign: 'center',
+              fontSize: '2rem', letterSpacing: '1rem',
+              background: 'var(--sur2)',
+              border: `2px solid ${error ? 'var(--dan)' : 'var(--brd)'}`,
+              borderRadius: 12, color: 'var(--txt)', outline: 'none',
+              transition: 'border-color 0.2s',
+              fontFamily: "'DM Mono', monospace",
+              caretColor: 'var(--acc)'
+            }}
+            onFocus={e => { if (!error) e.target.style.borderColor = 'var(--acc)' }}
+            onBlur={e => { if (!error) e.target.style.borderColor = 'var(--brd)' }}
+          />
         </div>
 
-        {/* Numpad */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-          {nums.map((n, i) => {
-            if (n === 'Borrar') return (
-              <button key={i} onClick={handleDelete} style={{
-                background: 'transparent', border: 'none', color: 'var(--mut)',
-                fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer'
-              }}>BORRAR</button>
-            )
-            if (n === 'Entrar') return (
-              <button key={i} onClick={verify} style={{
-                background: 'transparent', border: 'none', color: 'var(--acc)',
-                fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer'
-              }}>ENTRAR</button>
-            )
-            return (
-              <button key={i} onClick={() => handleInput(n)} style={{
-                background: 'var(--sur2)', border: '1px solid var(--brd)',
-                borderRadius: '50%', width: 70, height: 70, justifySelf: 'center',
-                color: 'var(--txt)', fontSize: '1.5rem', fontWeight: 600,
-                cursor: 'pointer', outline: 'none', transition: 'all 0.1s'
-              }}
-              onMouseDown={e => e.currentTarget.style.background = 'var(--acc)'}
-              onMouseUp={e => e.currentTarget.style.background = 'var(--sur2)'}
-              >
-                {n}
-              </button>
-            )
-          })}
-        </div>
+        <button
+          onClick={verify}
+          className="btn-primary"
+          style={{ width: '100%', marginTop: '1rem', padding: '0.9rem', fontSize: '1rem', borderRadius: 10, letterSpacing: 1 }}
+        >
+          ENTRAR
+        </button>
       </div>
+
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-10px); }
-          40% { transform: translateX(10px); }
-          60% { transform: translateX(-5px); }
-          80% { transform: translateX(5px); }
+          20%       { transform: translateX(-10px); }
+          40%       { transform: translateX(10px); }
+          60%       { transform: translateX(-5px); }
+          80%       { transform: translateX(5px); }
         }
       `}</style>
     </div>

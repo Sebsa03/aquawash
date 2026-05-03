@@ -65,6 +65,7 @@ class LavadoCrear(BaseModel):
     nivel_suciedad:       Optional[str] = None
     cliente_nombre:       Optional[str] = None
     cliente_telefono:     Optional[str] = None
+    metodo_pago:          Optional[str] = "efectivo"
 
 class LavadoRespuesta(BaseModel):
     id:                   int
@@ -84,6 +85,7 @@ class LavadoRespuesta(BaseModel):
     nivel_suciedad:       Optional[str]
     cliente_nombre:       Optional[str]
     cliente_telefono:     Optional[str]
+    metodo_pago:          str
     estado_actual:        str
     hora_lavando:         Optional[time]
     hora_terminado:       Optional[time]
@@ -105,6 +107,7 @@ class LavadoActualizar(BaseModel):
     nivel_suciedad:       Optional[str] = None
     cliente_nombre:       Optional[str] = None
     cliente_telefono:     Optional[str] = None
+    metodo_pago:          Optional[str] = None
 
 # ── ESTADÍSTICAS ─────────────────────────────────────────
 class EstadisticasRespuesta(BaseModel):
@@ -119,16 +122,19 @@ class VehiculoCrear(BaseModel):
     nombre: str
     precio: int
     icono:  Optional[str] = "🚗"
+    subcategorias: Optional[List[dict]] = []
 
 class VehiculoActualizar(BaseModel):
     nombre: Optional[str] = None
     precio: Optional[int] = None
     icono:  Optional[str] = None
     activo: Optional[bool] = None
+    subcategorias: Optional[List[dict]] = None
 
 class VehiculoRespuesta(BaseModel):
     id:     int
     nombre: str
     precio: int
     icono:  Optional[str]
-    activo: bool
+    activo: bool
+    subcategorias: List[dict] = []

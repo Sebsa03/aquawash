@@ -1,11 +1,5 @@
 import asyncpg
-import os
-from dotenv import load_dotenv
-
-# Carga las variables del archivo .env
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
+from app.config import settings
 
 # Pool de conexiones — en lugar de abrir y cerrar una conexión
 # por cada petición, se mantiene un grupo de conexiones listas
@@ -16,7 +10,7 @@ async def conectar():
     """Abre el pool de conexiones al iniciar el servidor."""
     global pool
     pool = await asyncpg.create_pool(
-        DATABASE_URL,
+        settings.database_url,
         min_size=2,   # conexiones mínimas siempre activas
         max_size=10   # máximo de conexiones simultáneas
     )

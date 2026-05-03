@@ -1,11 +1,9 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getEstadisticasHoy, getRanking } from '../../services/api'
 import StatCard from '../../components/StatCard'
 import { useToast } from '../../components/Toast'
-
-const TIPOS = { moto:'Moto', carro:'Carro', furgon:'Furgón', camion:'Camión', bus:'Bus' }
-const ICONS = { moto:'🏍', carro:'🚗', furgon:'🚐', camion:'🚚', bus:'🚌' }
+import { VEHICLE_TYPES as TIPOS, VEHICLE_ICONS as ICONS } from '../../utils/constants'
 
 function fmt(n) { return Number(n || 0).toLocaleString('es-CO') }
 function fmtK(n) {

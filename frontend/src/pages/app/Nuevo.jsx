@@ -1,21 +1,10 @@
-import { useState, useEffect } from 'react'
-import { getEmpleados, getAdicionales, crearLavado, getVehiculos } from '../../services/api'
+import { useState, useEffect, useRef } from 'react'
+import { getEmpleados, getAdicionales, crearLavado, getVehiculos, getSugerenciasPlaca } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../components/Toast'
+import { PAYMENT_METHODS } from '../../utils/constants'
 
-// --- CONSTANTS ---
-const SUBCATEGORIAS = {
-  carro:  { sedan: 'Sedán', suv: 'SUV +3k', pickup: 'Pickup +4k', van: 'Van +5k', deportivo: 'Deportivo +6k' },
-  camion: { sencillo: 'Sencillo', mediano: 'Mediano +5k', grande: 'Grande +10k', tractocamion: 'Tractocamión +15k' },
-  bus:    { buseta: 'Buseta', microbus: 'Microbús +3k', bus: 'Bus +8k', articulado: 'Articulado +12k' },
-  furgon: { pequeno: 'Pequeño', mediano: 'Mediano +2k', grande: 'Grande +4k', refrigerado: 'Refrigerado +6k' },
-}
-const SUBPRECIOS = {
-  carro:  { sedan: 0, suv: 3000, pickup: 4000, van: 5000, deportivo: 6000 },
-  camion: { sencillo: 0, mediano: 5000, grande: 10000, tractocamion: 15000 },
-  bus:    { buseta: 0, microbus: 3000, bus: 8000, articulado: 12000 },
-  furgon: { pequeno: 0, mediano: 2000, grande: 4000, refrigerado: 6000 },
-}
+
 const LAVADOS = {
   ligero:   { label: 'Ligero',   factor: 1.0, color: 'var(--acc)' },
   medio:    { label: 'Medio',    factor: 1.3, color: 'var(--acc2)' },
@@ -28,7 +17,10 @@ function horaActual() {
   return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`
 }
 
-const EMPTY = { tipo_vehiculo: '', placa: '', empleado_id: '', hora_ingreso: horaActual(), nota: '', subcategoria: '', nivel_suciedad: 'ligero', cliente_nombre: '', cliente_telefono: '' }
+// Genera un formulario vacío con la hora ACTUAL en cada llamada
+function makeEmpty() {
+  return { tipo_vehiculo: '', placa: '', empleado_id: '', hora_ingreso: horaActual(), nota: '', subcategoria: '', nivel_suciedad: 'ligero', cliente_nombre: '', cliente_telefono: '', metodo_pago: 'efectivo' }
+}
 
 // --- COMPONENT ---
 export default function Nuevo() {
@@ -46,7 +38,12 @@ export default function Nuevo() {
   const [vehiculos, setVehiculos]   = useState([])
   const [loading, setLoading]       = useState(false)
   const [selAdd, setSelAdd]         = useState({})
-  const [form, setForm]             = useState(EMPTY)
+  const [form, setForm]             = useState(makeEmpty)  // lazy init: hora fresca al montar
+  const [placaData, setPlacaData]       = useState(null)
+  const [sugerencias, setSugerencias]   = useState([])
+  const [showSuger, setShowSuger]       = useState(false)
+  const [loadingPlaca, setLoadingPlaca] = useState(false)
+  const seleccionandoRef = useRef(false) // bloquea re-query al seleccionar del dropdown
 
   useEffect(() => {
     Promise.all([getEmpleados(), getAdicionales(), getVehiculos()])
@@ -57,6 +54,40 @@ export default function Nuevo() {
       })
       .catch(() => toast?.('Error cargando datos'))
   }, [])
+
+  // Dropdown de sugerencias de placa — debounce 400ms, 3+ chars
+  useEffect(() => {
+    if (seleccionandoRef.current) return  // no re-consultar tras seleccionar
+    const q = form.placa.trim()
+    if (q.length < 3) { setSugerencias([]); setShowSuger(false); return }
+    const t = setTimeout(async () => {
+      if (seleccionandoRef.current) return
+      setLoadingPlaca(true)
+      try {
+        const lista = await getSugerenciasPlaca(q)
+        setSugerencias(lista || [])
+        setShowSuger((lista || []).length > 0)
+      } catch(e) { setSugerencias([]); setShowSuger(false) }
+      finally { setLoadingPlaca(false) }
+    }, 400)
+    return () => clearTimeout(t)
+  }, [form.placa])
+
+  function selectSugerencia(sug) {
+    seleccionandoRef.current = true          // bloquear el useEffect
+    setSugerencias([])
+    setShowSuger(false)
+    setPlacaData(sug)
+    setForm(f => ({
+      ...f,
+      placa:            sug.placa,
+      tipo_vehiculo:    (sug.tipo_vehiculo    || f.tipo_vehiculo).toLowerCase(),
+      subcategoria:     sug.subcategoria     || '',
+      cliente_nombre:   sug.cliente_nombre   || '',
+      cliente_telefono: sug.cliente_telefono || '',
+    }))
+    setTimeout(() => { seleccionandoRef.current = false }, 800)  // desbloquear
+  }
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -71,13 +102,17 @@ export default function Nuevo() {
   // Calculation
   const vehiculoSeleccionado = vehiculos.find(v => v.nombre.toLowerCase() === form.tipo_vehiculo.toLowerCase())
   const precioBase     = vehiculoSeleccionado?.precio ?? 0
-  const subExtra       = SUBPRECIOS[form.tipo_vehiculo.toLowerCase()]?.[form.subcategoria] ?? 0
+  
+  const subcategoriasVehiculo = vehiculoSeleccionado?.subcategorias || []
+  const subcategoriaActual = subcategoriasVehiculo.find(s => s.nombre.toLowerCase() === form.subcategoria.toLowerCase())
+  const subExtra       = subcategoriaActual?.precio_extra ?? 0
+  
   const factor         = LAVADOS[form.nivel_suciedad]?.factor ?? 1
   const adicsSelec     = adicionales.filter(a => selAdd[a.id])
   const precioAdics    = adicsSelec.reduce((s, a) => s + a.precio, 0)
   const precioTotal    = Math.round((precioBase + subExtra) * factor) + precioAdics
 
-  const tieneSubcat = SUBCATEGORIAS[form.tipo_vehiculo.toLowerCase()]
+  const tieneSubcat = subcategoriasVehiculo.length > 0
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -109,10 +144,13 @@ export default function Nuevo() {
         nivel_suciedad: form.nivel_suciedad,
         cliente_nombre: form.cliente_nombre || null,
         cliente_telefono: form.cliente_telefono || null,
+        metodo_pago: form.metodo_pago
       })
       toast?.(`Lavado registrado — $${fmt(precioTotal)}`)
-      setForm({ ...EMPTY, hora_ingreso: horaActual() })
+      setForm(makeEmpty())
       setSelAdd({})
+      setPlacaData(null)
+      setSugerencias([])
     } catch (err) {
       toast?.(`Error: ${err.message}`)
     } finally {
@@ -121,32 +159,32 @@ export default function Nuevo() {
   }
 
   // LARGER STYLES
-  const labelStyle = { marginBottom: '0.4rem', fontSize: '0.9rem', color: 'var(--mut)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }
-  const inputStyle = { padding: '0.8rem 1rem', fontSize: '1.2rem', borderRadius: 8, background: 'var(--sur2)', border: '1px solid var(--brd)', color: 'var(--txt)', outline: 'none', width: '100%', transition: 'border-color 0.2s', fontFamily: "'DM Mono', monospace" }
+  const labelStyle = { marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--mut)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }
+  const inputStyle = { padding: '0.8rem 1rem', fontSize: '1.2rem', borderRadius: 8, background: 'rgba(28, 31, 46, 0.5)', border: '1px solid var(--brd)', color: 'var(--txt)', outline: 'none', width: '100%', transition: 'all 0.3s ease', fontFamily: "'JetBrains Mono', monospace" }
 
   return (
     <div style={{ padding: '0.5rem 1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
 
       {/* ── HEADER ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px solid var(--brd)' }}>
-        <h1 style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: '2.4rem', letterSpacing: 3, color: 'var(--acc)', margin: 0 }}>
+      <div className="nuevo-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '0.5rem', borderBottom: '1px solid var(--brd)', gap: '0.5rem', overflow: 'hidden' }}>
+        <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', letterSpacing: 0.5, color: '#fff', margin: 0, flexShrink: 1, minWidth: 0, textShadow: '0 0 15px rgba(0,212,255,0.2)' }}>
           Registrar Lavado
         </h1>
-        <div style={{ fontFamily: "'DM Mono',monospace", fontSize: '2.8rem', fontWeight: 700, color: 'var(--acc3)', letterSpacing: 1, lineHeight: 1 }}>
+        <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 'clamp(1.6rem, 5vw, 2.8rem)', fontWeight: 800, color: 'var(--acc3)', letterSpacing: 0, lineHeight: 1, flexShrink: 0, whiteSpace: 'nowrap', textShadow: '0 0 20px rgba(0,230,118,0.3)' }}>
           ${fmt(precioTotal)}
         </div>
       </div>
 
       {/* ── BODY ── */}
-      <form onSubmit={handleSubmit} style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1.5rem', overflow: 'hidden' }}>
+      <form onSubmit={handleSubmit} className="nuevo-form">
 
         {/* ══ COLUMNA IZQUIERDA: Datos del vehículo ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        <div className="nuevo-col">
 
           {/* Tipo de vehículo */}
           <div>
             <div style={labelStyle}>Tipo de vehículo</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+            <div className="nuevo-vehiculos-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
               {vehiculos.length > 0
                 ? vehiculos.map(v => (
                     <button key={v.id} type="button"
@@ -179,16 +217,59 @@ export default function Nuevo() {
           </div>
 
           {/* Placa + Hora */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={labelStyle}>Placa</label>
+          <div className="nuevo-placa-hora">
+            <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              <label style={labelStyle}>Placa
+                {loadingPlaca && <span style={{ marginLeft: 8, fontSize: '0.7rem', color: 'var(--mut)', textTransform: 'none', fontWeight: 400 }}>buscando...</span>}
+              </label>
               <input style={inputStyle} name="placa" placeholder="ABC-123"
                 value={form.placa} autoComplete="off" required
-                onChange={e => setForm(f => ({ ...f, placa: e.target.value.toUpperCase() }))} 
+                onChange={e => { setForm(f => ({ ...f, placa: e.target.value.toUpperCase() })); setPlacaData(null) }}
                 onFocus={e => e.target.style.borderColor = 'var(--acc)'}
-                onBlur={e => e.target.style.borderColor = 'var(--brd)'}
+                onBlur={e => { e.target.style.borderColor = 'var(--brd)'; setTimeout(() => setShowSuger(false), 160) }}
               />
+              {/* Dropdown de sugerencias */}
+              {showSuger && sugerencias.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
+                  background: 'var(--sur)', border: '1px solid var(--acc)',
+                  borderRadius: 8, marginTop: 2, overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.35)'
+                }}>
+                  {sugerencias.map(sug => (
+                    <div key={sug.placa}
+                      onMouseDown={() => selectSugerencia(sug)}
+                      style={{
+                        padding: '10px 14px', cursor: 'pointer', display: 'flex',
+                        justifyContent: 'space-between', alignItems: 'center',
+                        borderBottom: '1px solid var(--brd)', transition: 'background 0.15s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,212,255,0.08)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--acc)', fontSize: '1rem' }}>
+                        {sug.placa}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--mut)' }}>
+                        {sug.tipo_vehiculo}{sug.cliente_nombre ? ` · ${sug.cliente_nombre}` : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Badge de confirmación cuando ya se seleccionó */}
+              {placaData && !showSuger && (
+                <div style={{
+                  marginTop: 6, padding: '5px 10px', borderRadius: 6,
+                  background: 'rgba(0,200,83,0.1)', border: '1px solid rgba(0,200,83,0.3)',
+                  fontSize: '0.76rem', color: 'var(--acc3)', display: 'flex', alignItems: 'center', gap: 5,
+                  textTransform: 'none', letterSpacing: 0
+                }}>
+                  ✅ Placa conocida
+                </div>
+              )}
             </div>
+
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <label style={labelStyle}>Hora de ingreso</label>
               <input style={inputStyle} type="time" name="hora_ingreso"
@@ -202,9 +283,9 @@ export default function Nuevo() {
           {/* Empleado */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <label style={labelStyle}>Asignado a</label>
-            <select style={{...inputStyle, fontFamily: "'DM Sans', sans-serif"}} name="empleado_id" value={form.empleado_id} onChange={handleChange} required
-              onFocus={e => e.target.style.borderColor = 'var(--acc)'}
-              onBlur={e => e.target.style.borderColor = 'var(--brd)'}
+            <select style={{...inputStyle, fontFamily: "'Inter', sans-serif", fontSize: '1rem'}} name="empleado_id" value={form.empleado_id} onChange={handleChange} required
+              onFocus={e => { e.target.style.borderColor = 'var(--acc)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.15)' }}
+              onBlur={e => { e.target.style.borderColor = 'var(--brd)'; e.target.style.boxShadow = 'none' }}
             >
               <option value="">-- Seleccionar Trabajador --</option>
               {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
@@ -216,17 +297,17 @@ export default function Nuevo() {
             <div style={{ animation: 'fadeIn 0.3s' }}>
               <div style={labelStyle}>Opciones de tamaño (Subcategoría)</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-                {Object.entries(SUBCATEGORIAS[form.tipo_vehiculo.toLowerCase()]).map(([key, lbl]) => (
-                  <button key={key} type="button"
-                    onClick={() => setForm(f => ({ ...f, subcategoria: key }))}
+                {subcategoriasVehiculo.map(sub => (
+                  <button key={sub.nombre} type="button"
+                    onClick={() => setForm(f => ({ ...f, subcategoria: sub.nombre }))}
                     style={{
                       padding: '0.4rem 0.8rem', borderRadius: 20, fontSize: '0.9rem', fontWeight: 600,
-                      border: `2px solid ${form.subcategoria === key ? 'var(--acc2)' : 'var(--brd)'}`,
-                      background: form.subcategoria === key ? 'rgba(255,107,43,0.12)' : 'var(--sur2)',
-                      color: form.subcategoria === key ? 'var(--acc2)' : 'var(--mut)',
+                      border: `2px solid ${form.subcategoria === sub.nombre ? 'var(--acc2)' : 'var(--brd)'}`,
+                      background: form.subcategoria === sub.nombre ? 'rgba(255,107,43,0.12)' : 'var(--sur2)',
+                      color: form.subcategoria === sub.nombre ? 'var(--acc2)' : 'var(--mut)',
                       cursor: 'pointer', transition: 'all 0.15s', flexGrow: 1, minWidth: '80px'
                     }}>
-                    {lbl}
+                    {sub.etiqueta}
                   </button>
                 ))}
               </div>
@@ -254,41 +335,41 @@ export default function Nuevo() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="nuevo-cliente">
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <label style={labelStyle}>Dueño / Cliente (opcional)</label>
-              <input style={{...inputStyle, fontFamily: "'DM Sans', sans-serif"}} name="cliente_nombre" placeholder="Nombre completo"
+              <input style={{...inputStyle, fontFamily: "'Inter', sans-serif", fontSize: '1rem'}} name="cliente_nombre" placeholder="Nombre completo"
                 value={form.cliente_nombre} onChange={handleChange}
-                onFocus={e => e.target.style.borderColor = 'var(--acc)'}
-                onBlur={e => e.target.style.borderColor = 'var(--brd)'}
+                onFocus={e => { e.target.style.borderColor = 'var(--acc)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.15)' }}
+                onBlur={e => { e.target.style.borderColor = 'var(--brd)'; e.target.style.boxShadow = 'none' }}
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <label style={labelStyle}>Teléfono (opcional)</label>
-              <input style={{...inputStyle, fontFamily: "'DM Sans', sans-serif"}} name="cliente_telefono" placeholder="+57 320..."
+              <input style={{...inputStyle, fontFamily: "'Inter', sans-serif", fontSize: '1rem'}} name="cliente_telefono" placeholder="+57 320..."
                 value={form.cliente_telefono} onChange={handleChange}
-                onFocus={e => e.target.style.borderColor = 'var(--acc)'}
-                onBlur={e => e.target.style.borderColor = 'var(--brd)'}
+                onFocus={e => { e.target.style.borderColor = 'var(--acc)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.15)' }}
+                onBlur={e => { e.target.style.borderColor = 'var(--brd)'; e.target.style.boxShadow = 'none' }}
               />
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
             <label style={labelStyle}>Nota (opcional)</label>
-            <input style={{...inputStyle, fontFamily: "'DM Sans', sans-serif"}} name="nota" placeholder="Observaciones adicionales..."
+            <input style={{...inputStyle, fontFamily: "'Inter', sans-serif", fontSize: '1rem'}} name="nota" placeholder="Observaciones adicionales..."
               value={form.nota} onChange={handleChange} 
-              onFocus={e => e.target.style.borderColor = 'var(--acc)'}
-              onBlur={e => e.target.style.borderColor = 'var(--brd)'}
+              onFocus={e => { e.target.style.borderColor = 'var(--acc)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.15)' }}
+              onBlur={e => { e.target.style.borderColor = 'var(--brd)'; e.target.style.boxShadow = 'none' }}
             />
           </div>
         </div>
 
         {/* ══ COLUMNA DERECHA: Adicionales y Resumen ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
+        <div className="nuevo-col-right">
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: '0.5rem' }}>
             <div style={labelStyle}>Añadir Servicios Adicionales</div>
-            <div style={{
+            <div className="nuevo-adicionales-grid" style={{
               flex: 1, overflowY: 'auto', display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
               gap: '0.6rem', alignContent: 'start',
@@ -310,7 +391,7 @@ export default function Nuevo() {
                       <span style={{ fontSize: '1rem', fontWeight: 600, color: selAdd[a.id] ? 'var(--txt)' : 'var(--mut)', lineHeight: 1.2 }}>
                         {a.nombre}
                       </span>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: "'DM Mono',monospace", color: 'var(--acc)', marginTop: 6 }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", color: 'var(--acc)', marginTop: 6 }}>
                         +${fmt(a.precio)}
                       </span>
                     </button>
@@ -319,25 +400,43 @@ export default function Nuevo() {
             </div>
           </div>
 
-          <div style={{
-            background: 'var(--sur2)', border: '2px solid var(--brd)', borderRadius: 12,
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: '0.5rem', marginTop: '1rem' }}>
+            <div style={labelStyle}>Método de Pago</div>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              {Object.entries(PAYMENT_METHODS).map(([key, label]) => (
+                <button key={key} type="button"
+                  onClick={() => setForm(f => ({ ...f, metodo_pago: key }))}
+                  style={{
+                    flex: 1, minWidth: '120px', padding: '0.6rem 0.5rem', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600,
+                    border: `2px solid ${form.metodo_pago === key ? 'var(--acc3)' : 'var(--brd)'}`,
+                    background: form.metodo_pago === key ? 'rgba(0,230,118,0.1)' : 'var(--sur2)',
+                    color: form.metodo_pago === key ? 'var(--acc3)' : 'var(--mut)',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{
             padding: '1.2rem', fontSize: '1rem', color: 'var(--mut)',
             display: 'flex', flexDirection: 'column', gap: '0.6rem',
-            boxShadow: '0 -10px 30px rgba(0,0,0,0.3)'
+            border: '1px solid rgba(0,230,118,0.2)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Base {form.tipo_vehiculo ? form.tipo_vehiculo.toUpperCase() : '—'}</span>
-              <span style={{ color: 'var(--txt)', fontFamily: "'DM Mono',monospace", fontWeight: 500 }}>${fmt(precioBase)}</span>
+              <span style={{ color: 'var(--txt)', fontFamily: "'JetBrains Mono',monospace", fontWeight: 500 }}>${fmt(precioBase)}</span>
             </div>
             {subExtra > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Subcategoría extra</span>
-                <span style={{ color: 'var(--acc2)', fontFamily: "'DM Mono',monospace", fontWeight: 500 }}>+${fmt(subExtra)}</span>
+                <span style={{ color: 'var(--acc2)', fontFamily: "'JetBrains Mono',monospace", fontWeight: 500 }}>+${fmt(subExtra)}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Nivel: {LAVADOS[form.nivel_suciedad]?.label}</span>
-              <span style={{ color: 'var(--txt)', fontFamily: "'DM Mono',monospace", fontWeight: 500 }}>
+              <span style={{ color: 'var(--txt)', fontFamily: "'JetBrains Mono',monospace", fontWeight: 500 }}>
                 ×{LAVADOS[form.nivel_suciedad]?.factor} = ${fmt(Math.round((precioBase + subExtra) * factor))}
               </span>
             </div>
@@ -345,12 +444,12 @@ export default function Nuevo() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--acc)' }}>
                   <span>Adicionales ({adicsSelec.length})</span>
-                  <span style={{ fontFamily: "'DM Mono',monospace", fontWeight: 600 }}>+${fmt(precioAdics)}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }}>+${fmt(precioAdics)}</span>
                 </div>
                 {adicsSelec.map(a => (
                   <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', paddingLeft: '1rem', color: 'var(--mut)' }}>
                     <span>↳ {a.nombre}</span>
-                    <span style={{ fontFamily: "'DM Mono',monospace" }}>+${fmt(a.precio)}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace" }}>+${fmt(a.precio)}</span>
                   </div>
                 ))}
               </div>
@@ -358,13 +457,13 @@ export default function Nuevo() {
             <div style={{ height: 1, background: 'var(--brd)', margin: '0.5rem 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'var(--txt)', fontSize: '1.2rem', fontWeight: 700 }}>Total</span>
-              <span style={{ fontFamily: "'DM Mono',monospace", fontSize: '2rem', fontWeight: 700, color: 'var(--acc3)', lineHeight: 1 }}>${fmt(precioTotal)}</span>
+              <span style={{ fontFamily: "'Outfit',sans-serif", fontSize: '2.4rem', fontWeight: 800, color: 'var(--acc3)', lineHeight: 1, textShadow: '0 0 15px rgba(0,230,118,0.3)' }}>${fmt(precioTotal)}</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <div className="nuevo-actions" style={{ display: 'flex', gap: '0.8rem' }}>
             <button type="button" className="btn-secondary"
-              onClick={() => { setForm({ ...EMPTY, hora_ingreso: horaActual() }); setSelAdd({}) }}
+              onClick={() => { setForm(makeEmpty()); setSelAdd({}) }}
               style={{ flex: 1, padding: '1.2rem', fontSize: '1.1rem', borderRadius: 10, fontWeight: 600 }}>
               Limpiar
             </button>

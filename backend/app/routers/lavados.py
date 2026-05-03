@@ -34,10 +34,15 @@ async def registrar_lavado(
     Primero busca en vehiculos_catalogo (dinámico),
     si no existe cae al campo precio_{tipo} de lavaderos.
     """
+    # 0. Verificar que la caja de hoy no esté cerrada
+    caja_cerrada = await db.fetchval("SELECT id FROM cierres_caja WHERE lavadero_id = $1 AND fecha_cierre = CURRENT_DATE", lavadero_id)
+    if caja_cerrada:
+        raise HTTPException(status_code=400, detail="La caja del día de hoy ya está cerrada. No se pueden registrar más lavados.")
+
     # 1. Buscar en el catálogo dinámico de vehículos
-    precio_catalogo = await db.fetchval(
+    precio_catalogo_row = await db.fetchrow(
         """
-        SELECT precio FROM vehiculos_catalogo
+        SELECT precio, subcategorias FROM vehiculos_catalogo
         WHERE lavadero_id = $1
           AND LOWER(nombre) = LOWER($2)
           AND activo = TRUE
@@ -46,8 +51,23 @@ async def registrar_lavado(
         lavadero_id, datos.tipo_vehiculo
     )
 
-    if precio_catalogo is not None:
-        precio_base = precio_catalogo
+    sub_extra = 0
+    if precio_catalogo_row is not None:
+        precio_base = precio_catalogo_row["precio"]
+        subs_val = precio_catalogo_row["subcategorias"]
+        if isinstance(subs_val, str):
+            try:
+                subs = json.loads(subs_val)
+            except Exception:
+                subs = []
+        else:
+            subs = subs_val or []
+            
+        sub_l = (datos.subcategoria or "").lower()
+        for s in subs:
+            if s.get("nombre", "").lower() == sub_l:
+                sub_extra = s.get("precio_extra", 0)
+                break
     else:
         # 2. Fallback: columnas estáticas en lavaderos (moto/carro/furgon/camion/bus)
         tipos_validos = {"moto", "carro", "furgon", "camion", "bus"}
@@ -67,21 +87,8 @@ async def registrar_lavado(
 
     precio_adicionales = sum(a.precio for a in datos.adicionales_aplicados)
     
-    # Cálculos dinámicos que igualan la lógica del frontend usando factores y subcategorías
-    subcategorias_precios = {
-        "moto": {"scooter": 0, "deportiva": 2000, "touring": 4000, "chopper": 5000},
-        "carro": {"sedan": 0, "suv": 3000, "pickup": 4000, "van": 5000, "deportivo": 6000},
-        "camion": {"pequeno": 0, "mediano": 5000, "grande": 10000, "trailer": 20000},
-        "bus": {"buseta": 0, "microbus": 3000, "bus": 8000, "articulado": 12000},
-        "furgon": {"pequeno": 0, "mediano": 2000, "grande": 4000, "refrigerado": 6000}
-    }
     factores = {"ligero": 1.0, "medio": 1.3, "profundo": 1.6}
-    
-    tipo_l = datos.tipo_vehiculo.lower()
-    sub_l = (datos.subcategoria or "").lower()
     niv_l = (datos.nivel_suciedad or "ligero").lower()
-    
-    sub_extra = subcategorias_precios.get(tipo_l, {}).get(sub_l, 0)
     factor = factores.get(niv_l, 1.0)
     
     precio_total = round((precio_base + sub_extra) * factor) + precio_adicionales
@@ -96,8 +103,8 @@ async def registrar_lavado(
             lavadero_id, empleado_id, placa, tipo_vehiculo,
             hora_ingreso, precio_base, precio_adicionales, precio_total,
             adicionales_aplicados, etiquetas_estado, nota,
-            subcategoria, nivel_suciedad, cliente_nombre, cliente_telefono
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14,$15)
+            subcategoria, nivel_suciedad, cliente_nombre, cliente_telefono, metodo_pago
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14,$15,$16)
         RETURNING *
         """,
         lavadero_id, datos.empleado_id, datos.placa.upper(),
@@ -105,7 +112,7 @@ async def registrar_lavado(
         precio_base, precio_adicionales, precio_total,
         adicionales_json, etiquetas_json, datos.nota,
         datos.subcategoria, datos.nivel_suciedad,
-        datos.cliente_nombre, datos.cliente_telefono
+        datos.cliente_nombre, datos.cliente_telefono, datos.metodo_pago
     )
     return parse_lavado(fila)
 
@@ -126,15 +133,15 @@ async def listar_lavados(
     Paginado para no traer miles de registros de golpe.
     """
     # Construir filtro de fecha según período
-    filtros = {"hoy": "fecha = CURRENT_DATE",
-               "semana": "fecha >= CURRENT_DATE - INTERVAL '7 days'",
-               "mes": "fecha >= date_trunc('month', CURRENT_DATE)",
+    filtros = {"hoy": "l.fecha = CURRENT_DATE",
+               "semana": "l.fecha >= CURRENT_DATE - INTERVAL '7 days'",
+               "mes": "l.fecha >= date_trunc('month', CURRENT_DATE)",
                "todo": "TRUE"}
     filtro_fecha = filtros[periodo]
 
-    filtro_tipo   = f"AND tipo_vehiculo = '{tipo}'" if tipo else ""
-    filtro_buscar = f"AND (placa ILIKE '%{buscar}%')" if buscar else ""
-    filtro_estado = f"AND l.estado = '{estado}'" if estado else ""
+    filtro_tipo   = f"AND l.tipo_vehiculo = '{tipo}'" if tipo else ""
+    filtro_buscar = f"AND (l.placa ILIKE '%{buscar}%')" if buscar else ""
+    filtro_estado = f"AND l.estado_actual = '{estado}'" if estado else ""
     offset        = (pagina - 1) * limite
 
     filas = await db.fetch(
@@ -142,9 +149,9 @@ async def listar_lavados(
         SELECT l.*, e.nombre AS empleado_nombre FROM lavados l
         LEFT JOIN empleados e ON l.empleado_id = e.id
         WHERE l.lavadero_id = $1
-          AND l.{filtro_fecha.replace('fecha', 'fecha')}
-          {filtro_tipo.replace('tipo_vehiculo', 'l.tipo_vehiculo')}
-          {filtro_buscar.replace('placa', 'l.placa')}
+          AND {filtro_fecha}
+          {filtro_tipo}
+          {filtro_buscar}
           {filtro_estado}
         ORDER BY l.fecha DESC, l.hora_ingreso DESC
         LIMIT $2 OFFSET $3
@@ -154,7 +161,62 @@ async def listar_lavados(
     return [parse_lavado(f) for f in filas]
 
 
+@router.get("/sugerencias-placa")
+async def sugerencias_placa(
+    q: str = Query(..., min_length=1),
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """
+    Devuelve hasta 8 placas que coincidan parcialmente con 'q'.
+    Incluye los datos del último lavado de cada placa para el autocompletado.
+    """
+    filas = await db.fetch(
+        """
+        SELECT DISTINCT ON (placa)
+               placa, tipo_vehiculo, subcategoria,
+               cliente_nombre, cliente_telefono
+        FROM lavados
+        WHERE lavadero_id = $1
+          AND UPPER(placa) LIKE UPPER($2)
+        ORDER BY placa, fecha DESC, hora_ingreso DESC
+        LIMIT 8
+        """,
+        lavadero_id, f"{q.strip().upper()}%"
+    )
+    return [dict(f) for f in filas]
+
+
+@router.get("/placa/{placa}")
+async def buscar_por_placa(
+    placa: str,
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """
+    Devuelve los datos más recientes de una placa para pre-llenar el formulario de registro.
+    Útil para autocompletar tipo de vehículo, nombre y teléfono del cliente.
+    """
+    fila = await db.fetchrow(
+        """
+        SELECT placa, tipo_vehiculo, subcategoria, nivel_suciedad,
+               cliente_nombre, cliente_telefono, empleado_id
+        FROM lavados
+        WHERE lavadero_id = $1
+          AND UPPER(placa) = UPPER($2)
+        ORDER BY fecha DESC, hora_ingreso DESC
+        LIMIT 1
+        """,
+        lavadero_id, placa.strip()
+    )
+    if not fila:
+        return None
+    return dict(fila)
+
+
+
 from app.models.schemas import LavadoCrear, LavadoRespuesta, EstadoActualizar, LavadoActualizar
+
 
 @router.patch("/{lavado_id}/estado", response_model=LavadoRespuesta)
 async def actualizar_estado_lavado(
@@ -164,6 +226,14 @@ async def actualizar_estado_lavado(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Actualiza el estado de un lavado y registra la hora local del cambio. Si se cancela, almacena el motivo."""
+    fila_previa = await db.fetchrow("SELECT fecha FROM lavados WHERE id = $1 AND lavadero_id = $2", lavado_id, lavadero_id)
+    if not fila_previa:
+        raise HTTPException(status_code=404, detail="Lavado no encontrado")
+        
+    caja_cerrada = await db.fetchval("SELECT id FROM cierres_caja WHERE lavadero_id = $1 AND fecha_cierre = $2", lavadero_id, fila_previa["fecha"])
+    if caja_cerrada:
+        raise HTTPException(status_code=400, detail="La caja de este día ya está cerrada. No se puede modificar el estado.")
+
     estados_validos = {"espera", "lavando", "terminado", "entregado", "cancelado"}
     if datos.estado not in estados_validos:
         raise HTTPException(status_code=422, detail="Estado no válido")
@@ -214,6 +284,10 @@ async def editar_lavado_general(
     fila_previa = await db.fetchrow("SELECT * FROM lavados WHERE id = $1 AND lavadero_id = $2", lavado_id, lavadero_id)
     if not fila_previa:
         raise HTTPException(status_code=404, detail="Lavado no encontrado")
+        
+    caja_cerrada = await db.fetchval("SELECT id FROM cierres_caja WHERE lavadero_id = $1 AND fecha_cierre = $2", lavadero_id, fila_previa["fecha"])
+    if caja_cerrada:
+        raise HTTPException(status_code=400, detail="La caja de este día ya está cerrada. No se puede editar el registro.")
     
     # Cargar valores actuales o reemplazarlos
     prev = parse_lavado(fila_previa)
@@ -225,6 +299,7 @@ async def editar_lavado_general(
     niv_suc = datos.nivel_suciedad if datos.nivel_suciedad is not None else prev.get("nivel_suciedad", "ligero")
     cli_nom = datos.cliente_nombre if datos.cliente_nombre is not None else prev.get("cliente_nombre")
     cli_tel = datos.cliente_telefono if datos.cliente_telefono is not None else prev.get("cliente_telefono")
+    met_pag = datos.metodo_pago if datos.metodo_pago is not None else prev.get("metodo_pago", "efectivo")
     
     # JSON Adicionales
     if datos.adicionales_aplicados is not None:
@@ -237,20 +312,29 @@ async def editar_lavado_general(
     adicionales_json = json.dumps(adics)
     
     # Recalcular Subtotal y Total basado en constantes
-    subcategorias_precios = {
-        "moto": {"scooter": 0, "deportiva": 2000, "touring": 4000, "chopper": 5000},
-        "carro": {"sedan": 0, "suv": 3000, "pickup": 4000, "van": 5000, "deportivo": 6000},
-        "camion": {"pequeno": 0, "mediano": 5000, "grande": 10000, "trailer": 20000},
-        "bus": {"buseta": 0, "microbus": 3000, "bus": 8000, "articulado": 12000},
-        "furgon": {"pequeno": 0, "mediano": 2000, "grande": 4000, "refrigerado": 6000}
-    }
+    sub_extra = 0
+    precio_catalogo_row = await db.fetchrow(
+        "SELECT precio, subcategorias FROM vehiculos_catalogo WHERE lavadero_id = $1 AND LOWER(nombre) = LOWER($2)",
+        lavadero_id, tipo
+    )
+    if precio_catalogo_row:
+        subs_val = precio_catalogo_row["subcategorias"]
+        if isinstance(subs_val, str):
+            try:
+                subs = json.loads(subs_val)
+            except Exception:
+                subs = []
+        else:
+            subs = subs_val or []
+            
+        sub_l = (subcat or "").lower()
+        for s in subs:
+            if s.get("nombre", "").lower() == sub_l:
+                sub_extra = s.get("precio_extra", 0)
+                break
+
     factores = {"ligero": 1.0, "medio": 1.3, "profundo": 1.6}
-    
-    tipo_l = tipo.lower()
-    sub_l = (subcat or "").lower()
     niv_l = (niv_suc or "ligero").lower()
-    
-    sub_extra = subcategorias_precios.get(tipo_l, {}).get(sub_l, 0)
     factor = factores.get(niv_l, 1.0)
     
     precio_total = round((prev["precio_base"] + sub_extra) * factor) + precio_adicionales
@@ -261,15 +345,15 @@ async def editar_lavado_general(
             nota = $4, subcategoria = $5, nivel_suciedad = $6,
             cliente_nombre = $7, cliente_telefono = $8,
             adicionales_aplicados = $9::jsonb,
-            precio_adicionales = $10, precio_total = $11
-        WHERE id = $12 AND lavadero_id = $13
+            precio_adicionales = $10, precio_total = $11, metodo_pago = $12
+        WHERE id = $13 AND lavadero_id = $14
         RETURNING *
     """
     
     fila_actualizada = await db.fetchrow(
         update_q, 
         placa.upper(), tipo, emp, nota, subcat, niv_suc,
-        cli_nom, cli_tel, adicionales_json, precio_adicionales, precio_total,
+        cli_nom, cli_tel, adicionales_json, precio_adicionales, precio_total, met_pag,
         lavado_id, lavadero_id
     )
     return parse_lavado(fila_actualizada)
@@ -282,6 +366,14 @@ async def eliminar_lavado(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Elimina un lavado. El lavadero_id en el WHERE evita borrar datos de otro lavadero."""
+    fila_previa = await db.fetchrow("SELECT fecha FROM lavados WHERE id = $1 AND lavadero_id = $2", lavado_id, lavadero_id)
+    if not fila_previa:
+        raise HTTPException(status_code=404, detail="Lavado no encontrado")
+        
+    caja_cerrada = await db.fetchval("SELECT id FROM cierres_caja WHERE lavadero_id = $1 AND fecha_cierre = $2", lavadero_id, fila_previa["fecha"])
+    if caja_cerrada:
+        raise HTTPException(status_code=400, detail="La caja de este día ya está cerrada. No se puede eliminar.")
+
     resultado = await db.execute(
         "DELETE FROM lavados WHERE id = $1 AND lavadero_id = $2",
         lavado_id, lavadero_id

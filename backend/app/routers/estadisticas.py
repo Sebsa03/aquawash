@@ -213,3 +213,112 @@ async def resumen_placas(
         lavadero_id
     )
     return [dict(f) for f in filas]
+
+@router.get("/tendencia-diaria")
+async def tendencia_diaria(
+    periodo: str = Query("mes", enum=["semana","mes","total"]),
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """Ingresos y lavados agrupados por día para ver la evolución del mes/semana."""
+    filtros = {
+        "semana": "fecha >= CURRENT_DATE - INTERVAL '7 days'",
+        "mes":    "fecha >= date_trunc('month', CURRENT_DATE)",
+        "total":  "fecha >= CURRENT_DATE - INTERVAL '30 days'"
+    }
+    filas = await db.fetch(
+        f"""
+        SELECT
+            TO_CHAR(fecha, 'DD/MM') as dia,
+            COALESCE(SUM(precio_total), 0) AS ingresos,
+            COUNT(id) AS lavados
+        FROM lavados
+        WHERE lavadero_id = $1 AND estado != 'cancelado' AND {filtros[periodo]}
+        GROUP BY fecha
+        ORDER BY fecha ASC
+        """,
+        lavadero_id
+    )
+    return [dict(f) for f in filas]
+
+@router.get("/horas-pico")
+async def horas_pico(
+    periodo: str = Query("mes", enum=["hoy","semana","mes","total"]),
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """Cantidad de lavados agrupados por hora de ingreso."""
+    filtros = {
+        "hoy":    "fecha = CURRENT_DATE",
+        "semana": "fecha >= CURRENT_DATE - INTERVAL '7 days'",
+        "mes":    "fecha >= date_trunc('month', CURRENT_DATE)",
+        "total":  "TRUE"
+    }
+    filas = await db.fetch(
+        f"""
+        SELECT
+            EXTRACT(HOUR FROM hora_ingreso) as hora,
+            COUNT(id) as lavados
+        FROM lavados
+        WHERE lavadero_id = $1 AND estado != 'cancelado' AND {filtros[periodo]}
+        GROUP BY EXTRACT(HOUR FROM hora_ingreso)
+        ORDER BY hora ASC
+        """,
+        lavadero_id
+    )
+    # Llenar horas vacías para un gráfico continuo (6am a 8pm)
+    resultados = {h: 0 for h in range(6, 21)}
+    for f in filas:
+        h = int(f["hora"])
+        if h in resultados:
+            resultados[h] = f["lavados"]
+    return [{"hora": f"{h}:00", "lavados": v} for h, v in resultados.items()]
+
+@router.get("/recurrentes")
+async def clientes_recurrentes(
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """Calcula cuántos clientes son recurrentes (placa vista > 1 vez) vs nuevos."""
+    filas = await db.fetch(
+        """
+        SELECT 
+            placa, COUNT(id) as visitas
+        FROM lavados
+        WHERE lavadero_id = $1 AND estado != 'cancelado'
+        GROUP BY placa
+        """,
+        lavadero_id
+    )
+    total_unicos = len(filas)
+    recurrentes = sum(1 for f in filas if f["visitas"] > 1)
+    nuevos = total_unicos - recurrentes
+    return {"total_clientes_unicos": total_unicos, "recurrentes": recurrentes, "nuevos": nuevos}
+
+@router.get("/servicios")
+async def servicios_mas_vendidos(
+    periodo: str = Query("mes", enum=["hoy","semana","mes","total"]),
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """Agrupación por nivel de suciedad."""
+    filtros = {
+        "hoy":    "fecha = CURRENT_DATE",
+        "semana": "fecha >= CURRENT_DATE - INTERVAL '7 days'",
+        "mes":    "fecha >= date_trunc('month', CURRENT_DATE)",
+        "total":  "TRUE"
+    }
+    filas = await db.fetch(
+        f"""
+        SELECT 
+            COALESCE(nivel_suciedad, 'Basico') as nivel,
+            COUNT(id) as total,
+            COALESCE(SUM(precio_total), 0) as ingresos
+        FROM lavados
+        WHERE lavadero_id = $1 AND estado != 'cancelado' AND {filtros[periodo]}
+        GROUP BY COALESCE(nivel_suciedad, 'Basico')
+        ORDER BY total DESC
+        """,
+        lavadero_id
+    )
+    return [dict(f) for f in filas]
