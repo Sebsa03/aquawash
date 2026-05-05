@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import conectar, desconectar
-from app.routers import autenticacion, lavados, empleados, adicionales, estadisticas, config, caja
+from app.routers import autenticacion, lavados, empleados, adicionales, estadisticas, config, caja, inventario
 from app.logger import logger
 from app.config import settings
 
@@ -43,6 +43,7 @@ app.include_router(adicionales.router,   prefix="/adicionales",  tags=["Adiciona
 app.include_router(estadisticas.router,  prefix="/estadisticas", tags=["Estadisticas"])
 app.include_router(config.router,        prefix="/config",       tags=["Configuracion"])
 app.include_router(caja.router,          prefix="/caja",         tags=["Caja Financiera"])
+app.include_router(inventario.router,    prefix="/inventario",   tags=["Inventario"])
 
 @app.get("/")
 async def raiz():

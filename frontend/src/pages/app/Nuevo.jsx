@@ -329,7 +329,6 @@ export default function Nuevo() {
                     cursor: 'pointer', transition: 'all 0.15s',
                   }}>
                   {info.label}
-                  <div style={{ fontSize: '0.85rem', fontWeight: 500, opacity: 0.8, marginTop: 4 }}>Factor: ×{info.factor}</div>
                 </button>
               ))}
             </div>
@@ -437,7 +436,7 @@ export default function Nuevo() {
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Nivel: {LAVADOS[form.nivel_suciedad]?.label}</span>
               <span style={{ color: 'var(--txt)', fontFamily: "'JetBrains Mono',monospace", fontWeight: 500 }}>
-                ×{LAVADOS[form.nivel_suciedad]?.factor} = ${fmt(Math.round((precioBase + subExtra) * factor))}
+                ${fmt(Math.round((precioBase + subExtra) * factor))}
               </span>
             </div>
             {adicsSelec.length > 0 && (

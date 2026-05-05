@@ -592,7 +592,7 @@ export default function Historial() {
           {filtrados.map((l) => {
             const isCancelado = l.estado_actual === 'cancelado'
             const isFinished = l.estado_actual === 'entregado'
-            const indexEstadoActual = ESTADOS.findIndex(e => e.key === (l.estado_actual || 'espera'))
+            const indexEstadoActual = ESTADOS.findIndex(e => e.id === (l.estado_actual || 'espera'))
             
             return (
               <div key={l.id} className="glass-panel" style={{
@@ -672,21 +672,21 @@ export default function Historial() {
                     justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
                     background: 'rgba(0,0,0,0.2)', padding: '0.8rem', borderRadius: 8
                   }}>
-                    {ESTADOS.map((estado, idx) => {
+                    {ESTADOS.filter(e => e.id !== 'cancelado').map((estado, idx) => {
                       const isCompleted = idx <= indexEstadoActual
                       const isCurrent = idx === indexEstadoActual
                       
                       let horaStr = '--:--'
-                      if (estado.key === 'espera') horaStr = fTime(l.hora_ingreso)
-                      else if (estado.key === 'lavando') horaStr = fTime(l.hora_lavando)
-                      else if (estado.key === 'terminado') horaStr = fTime(l.hora_terminado)
-                      else if (estado.key === 'entregado') horaStr = fTime(l.hora_entregado)
+                      if (estado.id === 'espera') horaStr = fTime(l.hora_ingreso)
+                      else if (estado.id === 'lavando') horaStr = fTime(l.hora_lavando)
+                      else if (estado.id === 'terminado') horaStr = fTime(l.hora_terminado)
+                      else if (estado.id === 'entregado') horaStr = fTime(l.hora_entregado)
 
                       return (
-                        <div key={estado.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '70px' }}>
+                        <div key={estado.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '70px' }}>
                           <button 
                             disabled={role === 'dueno'}
-                            onClick={() => handleCambiarEstado(l.id, estado.key)}
+                            onClick={() => handleCambiarEstado(l.id, estado.id)}
                             style={{
                               background: isCurrent ? 'var(--acc)' : isCompleted ? 'rgba(0,212,255,0.2)' : 'var(--sur)',
                               color: isCurrent ? '#000' : isCompleted ? 'var(--acc)' : 'var(--mut)',

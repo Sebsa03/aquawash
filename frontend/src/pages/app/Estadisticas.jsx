@@ -433,69 +433,90 @@ export default function Estadisticas() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
-            
-            {/* TENDENCIA DE INGRESOS */}
-            <div className="glass-panel" style={{ padding: '1.5rem', height: 350 }}>
+
+            {/* TENDENCIA DE INGRESOS - tabla simple */}
+            <div className="glass-panel" style={{ padding: '1.5rem', minHeight: 300, display: 'flex', flexDirection: 'column' }}>
               <div className="card-title" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>📈 Tendencia de Ingresos</div>
-              <ResponsiveContainer width="100%" height="85%">
-                <LineChart data={tendencia} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                  <XAxis dataKey="dia" stroke="var(--mut)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--mut)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `$${fmtK(v)}`} />
-                  <Tooltip 
-                    contentStyle={{ background: 'rgba(20,22,31,0.9)', border: '1px solid var(--brd)', borderRadius: 8, backdropFilter: 'blur(10px)' }}
-                    itemStyle={{ color: 'var(--acc)', fontWeight: 600 }}
-                    formatter={(val) => [`$${fmt(val)}`, 'Ingresos']}
-                  />
-                  <Line type="monotone" dataKey="ingresos" stroke="var(--acc)" strokeWidth={3} dot={{ r: 4, fill: 'var(--sur2)', strokeWidth: 2 }} activeDot={{ r: 6, fill: 'var(--acc)' }} />
-                </LineChart>
-              </ResponsiveContainer>
+              {tendencia.length === 0
+                ? <div style={{ color: 'var(--mut)', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No hay datos para este período</div>
+                : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
+                    {[...tendencia].reverse().map((d, i) => {
+                      const maxIng = Math.max(...tendencia.map(x => x.ingresos))
+                      const pct = maxIng > 0 ? (d.ingresos / maxIng) * 100 : 0
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--mut)', minWidth: 40, textAlign: 'right' }}>{d.dia}</span>
+                          <div style={{ flex: 1, height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, var(--acc), #00ffcc)', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                          </div>
+                          <span style={{ fontSize: '0.85rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--acc3)', fontWeight: 600, minWidth: 70, textAlign: 'right' }}>${fmtK(d.ingresos)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              }
             </div>
 
             {/* TIPOS DE VEHICULO */}
-            <div className="glass-panel" style={{ padding: '1.5rem', height: 350 }}>
+            <div className="glass-panel" style={{ padding: '1.5rem', minHeight: 300, display: 'flex', flexDirection: 'column' }}>
               <div className="card-title" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>🚗 Distribución por Vehículo</div>
-              <div style={{ display: 'flex', height: '85%', alignItems: 'center' }}>
-                <ResponsiveContainer width="50%" height="100%">
-                  <PieChart>
-                    <Pie data={porTipo} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="total">
-                      {porTipo.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ background: 'rgba(20,22,31,0.9)', border: '1px solid var(--brd)', borderRadius: 8 }}
-                      formatter={(val, name, props) => [val, TIPOS[props.payload.tipo_vehiculo]]}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div style={{ width: '50%', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                  {porTipo.map((t, idx) => (
-                    <div key={t.tipo_vehiculo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
-                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: COLORS[idx % COLORS.length] }}></div>
-                        {ICONS[t.tipo_vehiculo]} {TIPOS[t.tipo_vehiculo]}
-                      </div>
-                      <div style={{ fontWeight: 600 }}>{t.total}</div>
+              <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+                {porTipo.length === 0 ? <div style={{ color: 'var(--mut)' }}>No hay datos para esta fecha</div> : (
+                  <>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <PieChart width={240} height={240}>
+                        <Pie data={porTipo} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="total">
+                          {porTipo.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ background: 'rgba(20,22,31,0.9)', border: '1px solid var(--brd)', borderRadius: 8 }}
+                          formatter={(val, name, props) => [val, TIPOS[props.payload.tipo_vehiculo]]}
+                        />
+                      </PieChart>
                     </div>
-                  ))}
-                </div>
+                    <div style={{ width: '40%', display: 'flex', flexDirection: 'column', gap: '0.8rem', paddingRight: '1rem' }}>
+                      {porTipo.map((t, idx) => (
+                        <div key={t.tipo_vehiculo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '0.6rem 1rem', borderRadius: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' }}>
+                            <div style={{ width: 12, height: 12, borderRadius: '50%', background: COLORS[idx % COLORS.length] }}></div>
+                            <span style={{ fontWeight: 500, color: 'var(--txt)' }}>{ICONS[t.tipo_vehiculo]} {TIPOS[t.tipo_vehiculo]}</span>
+                          </div>
+                          <div style={{ fontWeight: 700, color: 'var(--acc)' }}>{t.total}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* HORAS PICO */}
-            <div className="glass-panel" style={{ padding: '1.5rem', height: 350 }}>
+            {/* HORAS PICO - barras en CSS puro */}
+            <div className="glass-panel" style={{ padding: '1.5rem', minHeight: 300, display: 'flex', flexDirection: 'column' }}>
               <div className="card-title" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>⏰ Horas Pico</div>
-              <ResponsiveContainer width="100%" height="85%">
-                <BarChart data={horasPico} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
-                  <XAxis dataKey="hora" stroke="var(--mut)" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--mut)" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ background: 'rgba(20,22,31,0.9)', border: '1px solid var(--brd)', borderRadius: 8 }}
-                  />
-                  <Bar dataKey="lavados" fill="var(--acc2)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {horasPico.every(h => h.lavados === 0)
+                ? <div style={{ color: 'var(--mut)', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No hay datos para este período</div>
+                : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 4, paddingTop: '1rem' }}>
+                    {horasPico.filter(h => h.lavados > 0 || parseInt(h.hora) >= 7 && parseInt(h.hora) <= 18).map((h, i) => {
+                      const maxL = Math.max(...horasPico.map(x => x.lavados), 1)
+                      const pct = (h.lavados / maxL) * 100
+                      return (
+                        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--acc2)', fontWeight: 700 }}>{h.lavados > 0 ? h.lavados : ''}</div>
+                          <div style={{ width: '100%', height: 140, display: 'flex', alignItems: 'flex-end' }}>
+                            <div style={{ width: '100%', height: `${Math.max(pct, h.lavados > 0 ? 5 : 0)}%`, background: pct > 60 ? 'var(--acc2)' : 'rgba(255,107,43,0.3)', borderRadius: '3px 3px 0 0', transition: 'height 0.5s ease' }} />
+                          </div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--mut)', whiteSpace: 'nowrap' }}>{h.hora.replace(':00','')}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              }
             </div>
 
             {/* RANKING EMPLEADOS */}
@@ -520,34 +541,28 @@ export default function Estadisticas() {
 
           </div>
 
-          {/* GRÁFICO HISTÓRICO SEMESTRAL (NUEVO) */}
+          {/* HISTÓRICO SEMESTRAL */}
           <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
             <div className="card-title" style={{ margin: 0 }}>📈 Histórico de Ingresos (Últimos 6 meses)</div>
-            
-            <div style={{ width: '100%', height: 350 }}>
-              {tendenciaHistorica.length === 0 ? <div className="empty-state">Sin datos históricos suficientes</div> : (
-                <ResponsiveContainer>
-                  <BarChart data={tendenciaHistorica} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <XAxis dataKey="mes" stroke="var(--mut)" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="var(--mut)" tick={{ fontSize: 12 }} tickFormatter={val => `$${fmtK(val)}`} />
-                    <Tooltip 
-                      contentStyle={{ background: 'rgba(28,31,46,0.95)', border: '1px solid var(--brd)', borderRadius: 8, backdropFilter: 'blur(10px)', color: '#fff' }}
-                      itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                      formatter={(value) => [`$${fmt(value)}`, 'Ingresos']}
-                      labelStyle={{ color: 'var(--acc)' }}
-                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    />
-                    <Bar dataKey="ingresos" fill="url(#colorHist)" radius={[6, 6, 0, 0]} />
-                    <defs>
-                      <linearGradient id="colorHist" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--acc3)" stopOpacity={0.8}/>
-                        <stop offset="100%" stopColor="var(--acc3)" stopOpacity={0.2}/>
-                      </linearGradient>
-                    </defs>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+
+            {tendenciaHistorica.length === 0
+              ? <div style={{ color: 'var(--mut)', textAlign: 'center', padding: '2rem' }}>Sin datos históricos suficientes</div>
+              : (
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.8rem', height: 220, paddingTop: '1.5rem' }}>
+                  {tendenciaHistorica.map((d, i) => {
+                    const maxIng = Math.max(...tendenciaHistorica.map(x => x.ingresos), 1)
+                    const pct = (d.ingresos / maxIng) * 100
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--acc3)', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>${fmtK(d.ingresos)}</span>
+                        <div style={{ width: '100%', height: `${Math.max(pct, 4)}%`, background: `linear-gradient(180deg, var(--acc3) 0%, rgba(0,230,118,0.2) 100%)`, borderRadius: '6px 6px 0 0', transition: 'height 0.6s ease', boxShadow: '0 0 12px rgba(0,230,118,0.2)' }} />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--mut)', whiteSpace: 'nowrap' }}>{d.mes}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            }
           </div>
 
         </div>

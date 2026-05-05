@@ -151,7 +151,7 @@ async def tendencia_ingresos(
     db=Depends(get_db),
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
-    """Ingresos de los últimos 6 meses."""
+    """Ingresos de los últimos 6 meses, siempre retorna los 6 meses aunque no haya datos."""
     filas = await db.fetch(
         f"""
         SELECT
@@ -166,7 +166,25 @@ async def tendencia_ingresos(
         """,
         lavadero_id
     )
-    return [dict(f) for f in filas]
+    datos = {f["mes"]: dict(f) for f in filas}
+
+    # Generar los 6 meses siempre, rellenando con 0 si no hay datos
+    from datetime import date
+    hoy = date.today()
+    resultado = []
+    for i in range(5, -1, -1):
+        # Calcular mes restando i meses manualmente
+        mes_num = hoy.month - i
+        anio = hoy.year
+        while mes_num <= 0:
+            mes_num += 12
+            anio -= 1
+        mes_key = f"{anio:04d}-{mes_num:02d}"
+        if mes_key in datos:
+            resultado.append(datos[mes_key])
+        else:
+            resultado.append({"mes": mes_key, "ingresos": 0, "lavados": 0})
+    return resultado
 
 @router.get("/cancelados")
 async def estadisticas_cancelados(

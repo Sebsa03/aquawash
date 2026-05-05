@@ -21,6 +21,73 @@ def parse_lavado(fila: dict) -> dict:
             d[campo] = []
     return d
 
+async def procesar_consumo_inventario(db, lavadero_id: int, lavado: dict):
+    """Busca las recetas del lavado y descuenta los productos del inventario."""
+    # 1. Receta Base (por tipo de vehículo o subcategoría)
+    nombres_buscar = [lavado["tipo_vehiculo"]]
+    if lavado.get("subcategoria"):
+        nombres_buscar.append(lavado["subcategoria"])
+
+    recetas_base = await db.fetch(
+        "SELECT producto_id, cantidad FROM recetas WHERE lavadero_id = $1 AND tipo_servicio = 'base' AND LOWER(nombre_servicio) = ANY($2::text[])",
+        lavadero_id, [n.lower() for n in nombres_buscar]
+    )
+    
+    # 2. Recetas Adicionales
+    recetas_adicionales = []
+    adicionales = lavado.get("adicionales_aplicados")
+    if isinstance(adicionales, str):
+        try: adicionales = json.loads(adicionales)
+        except: adicionales = []
+    
+    if adicionales is None:
+        adicionales = []
+        
+    for adic in adicionales:
+        nombre_adic = adic.get("nombre", "")
+        rs = await db.fetch(
+            "SELECT producto_id, cantidad FROM recetas WHERE lavadero_id = $1 AND tipo_servicio = 'adicional' AND LOWER(nombre_servicio) = LOWER($2)",
+            lavadero_id, nombre_adic
+        )
+        recetas_adicionales.extend(rs)
+        
+    # 3. Aplicar multiplicador del tipo de lavado a la receta base
+    factores_nivel = {
+        'sencillo': 1.0,
+        'general': 1.5,
+        'polichado': 2.0
+    }
+    nivel = lavado.get("nivel_suciedad", "sencillo")
+    factor = factores_nivel.get(nivel, 1.0)
+
+    recetas_base_procesadas = []
+    for r in recetas_base:
+        rd = dict(r)
+        rd["cantidad"] = float(rd["cantidad"]) * factor
+        recetas_base_procesadas.append(rd)
+
+    recetas_adic_procesadas = [dict(r) for r in recetas_adicionales]
+    
+    todas_las_recetas = recetas_base_procesadas + recetas_adic_procesadas
+    
+    # Descontar cada producto
+    for r in todas_las_recetas:
+        p_id = r["producto_id"]
+        cant_consumir = float(r["cantidad"])
+        
+        # Obtener stock actual
+        prod = await db.fetchrow("SELECT cantidad FROM inventario WHERE id = $1", p_id)
+        if prod:
+            nuevo_stock = max(0, float(prod["cantidad"]) - cant_consumir)
+            await db.execute("UPDATE inventario SET cantidad = $1 WHERE id = $2", nuevo_stock, p_id)
+            
+            # Registrar movimiento
+            motivo = f"{lavado['tipo_vehiculo'].upper()} - {lavado['placa']}"
+            await db.execute(
+                "INSERT INTO movimientos_inventario (lavadero_id, producto_id, tipo, cantidad, motivo) VALUES ($1, $2, 'consumo', $3, $4)",
+                lavadero_id, p_id, cant_consumir, motivo
+            )
+
 @router.post("/", response_model=LavadoRespuesta, status_code=201)
 async def registrar_lavado(
     datos: LavadoCrear,
@@ -226,7 +293,7 @@ async def actualizar_estado_lavado(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Actualiza el estado de un lavado y registra la hora local del cambio. Si se cancela, almacena el motivo."""
-    fila_previa = await db.fetchrow("SELECT fecha FROM lavados WHERE id = $1 AND lavadero_id = $2", lavado_id, lavadero_id)
+    fila_previa = await db.fetchrow("SELECT id, fecha, estado_actual FROM lavados WHERE id = $1 AND lavadero_id = $2", lavado_id, lavadero_id)
     if not fila_previa:
         raise HTTPException(status_code=404, detail="Lavado no encontrado")
         
@@ -269,6 +336,11 @@ async def actualizar_estado_lavado(
         
     if not fila:
         raise HTTPException(status_code=404, detail="Lavado no encontrado")
+
+    # Si el lavado pasó a "terminado" o "entregado" por primera vez, descontamos inventario
+    estado_previo = fila_previa["estado_actual"]
+    if datos.estado in ("terminado", "entregado") and estado_previo in ("espera", "lavando"):
+        await procesar_consumo_inventario(db, lavadero_id, dict(fila))
         
     return parse_lavado(fila)
 

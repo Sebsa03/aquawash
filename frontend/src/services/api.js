@@ -100,3 +100,18 @@ export const eliminarEgreso = (id) => request('DELETE', `/caja/egresos/${id}`)
 export const getCierreCaja = (fecha) => request('GET', `/caja/cierre/${fecha}`)
 export const getCierresCaja = () => request('GET', '/caja/cierres')
 export const crearCierreCaja = (data) => request('POST', '/caja/cierre', data)
+
+// INVENTARIO
+export const getInventario = () => request('GET', '/inventario/productos')
+export const crearProducto = (data) => request('POST', '/inventario/productos', data)
+export const editarProducto = (id, data) => request('PATCH', `/inventario/productos/${id}`, data)
+export const eliminarProducto = (id) => request('DELETE', `/inventario/productos/${id}`)
+
+// RECETAS (AUTOMATIZACIÓN)
+export const getRecetas = () => request('GET', '/inventario/recetas')
+export const crearReceta = (data) => request('POST', '/inventario/recetas', data)
+export const eliminarReceta = (id) => request('DELETE', `/inventario/recetas/${id}`)
+
+// MOVIMIENTOS INVENTARIO
+export const getMovimientosInventario = () => request('GET', '/inventario/movimientos')
+export const crearMovimientoInventario = (data) => request('POST', '/inventario/movimientos', data)

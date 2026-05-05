@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from datetime import date, time
+from datetime import date, time, datetime
 from enum import Enum
 
 
@@ -137,4 +137,60 @@ class VehiculoRespuesta(BaseModel):
     precio: int
     icono:  Optional[str]
     activo: bool
-    subcategorias: List[dict] = []
+    subcategorias: List[dict] = []
+
+# ── INVENTARIO Y RECETAS ──────────────────────────────────
+class ProductoCrear(BaseModel):
+    nombre: str
+    cantidad: float = 0
+    unidad: str
+    stock_minimo: float = 0
+
+class ProductoRespuesta(BaseModel):
+    id: int
+    lavadero_id: int
+    nombre: str
+    cantidad: float
+    unidad: str
+    stock_minimo: float
+
+class ProductoActualizar(BaseModel):
+    nombre: Optional[str] = None
+    cantidad: Optional[float] = None
+    unidad: Optional[str] = None
+    stock_minimo: Optional[float] = None
+
+class RecetaCrear(BaseModel):
+    producto_id: int
+    tipo_servicio: str  # 'base' o 'adicional'
+    nombre_servicio: str # ej. 'moto', 'carro', 'Encerado'
+    cantidad: float
+
+class RecetaRespuesta(BaseModel):
+    id: int
+    lavadero_id: int
+    producto_id: int
+    tipo_servicio: str
+    nombre_servicio: str
+    cantidad: float
+
+class RecetaConProducto(RecetaRespuesta):
+    producto_nombre: str
+    producto_unidad: str
+
+class MovimientoCrear(BaseModel):
+    producto_id: int
+    tipo: str # 'entrada', 'salida', 'consumo'
+    cantidad: float
+    motivo: Optional[str] = None
+
+class MovimientoRespuesta(BaseModel):
+    id: int
+    lavadero_id: int
+    producto_id: int
+    tipo: str
+    cantidad: float
+    motivo: Optional[str]
+    fecha: datetime
+    producto_nombre: Optional[str] = None
+    producto_unidad: Optional[str] = None

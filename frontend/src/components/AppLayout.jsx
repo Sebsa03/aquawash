@@ -87,13 +87,14 @@ export default function AppLayout() {
     { to: '/app/vehiculos',    label: '🚗 Vehículos', icon: '🚗', short: 'Vehículos'   },
     { to: '/app/empleados',    label: '👷 Empleados', icon: '👷', short: 'Empleados'   },
     { to: '/app/caja',         label: '💵 Caja',      icon: '💵', short: 'Caja'        },
+    { to: '/app/inventario',   label: '📦 Inventario',icon: '📦', short: 'Inventario'  },
     { to: '/app/config',       label: '⚙️ Config',    icon: '⚙️', short: 'Config'      },
   ]
   // Menú exclusivo de DUEÑO
   if (role === 'dueno') {
-    let allowed = ['/app/historial', '/app/estadisticas', '/app/vehiculos', '/app/empleados', '/app/caja', '/app/config']
+    let allowed = ['/app/historial', '/app/estadisticas', '/app/vehiculos', '/app/empleados', '/app/caja', '/app/inventario', '/app/config']
     if (isDemo) {
-      allowed = ['/app/historial', '/app/estadisticas', '/app/vehiculos', '/app/empleados', '/app/caja']
+      allowed = ['/app/historial', '/app/estadisticas', '/app/vehiculos', '/app/empleados', '/app/caja', '/app/inventario']
     }
     navItems = navItems.filter(i => allowed.includes(i.to))
   }
