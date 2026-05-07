@@ -42,7 +42,7 @@ async def resumen_por_periodo(
             COALESCE(SUM(precio_adicionales), 0) AS adicionales,
             COALESCE(AVG(precio_total), 0)       AS promedio
         FROM lavados
-        WHERE lavadero_id = $1 AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
         """,
         lavadero_id
     )
@@ -70,7 +70,7 @@ async def estadisticas_por_tipo(
             COUNT(*)                       AS total,
             COALESCE(SUM(precio_total), 0) AS ingresos
         FROM lavados
-        WHERE lavadero_id = $1 AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
         GROUP BY tipo_vehiculo
         ORDER BY total DESC
         """,
@@ -103,7 +103,7 @@ async def ranking_empleados(
             COALESCE(AVG(EXTRACT(EPOCH FROM (l.hora_terminado - l.hora_ingreso))/60), 0) AS minutos_promedio
         FROM empleados e
         LEFT JOIN lavados l
-            ON l.empleado_id = e.id {filtros[periodo]}
+            ON l.empleado_id = e.id AND l.estado_actual != 'cancelado' {filtros[periodo]}
         WHERE e.lavadero_id = $1 AND e.activo = TRUE
         GROUP BY e.id, e.nombre
         ORDER BY total_lavados DESC
@@ -138,7 +138,7 @@ async def ranking_empleados_detalle(
             COALESCE(AVG(EXTRACT(EPOCH FROM (l.hora_terminado - l.hora_ingreso))/60), 0) AS minutos_promedio
         FROM empleados e
         JOIN lavados l ON l.empleado_id = e.id {filtros[periodo]}
-        WHERE e.lavadero_id = $1 AND l.estado != 'cancelado'
+        WHERE e.lavadero_id = $1 AND l.estado_actual != 'cancelado'
         GROUP BY e.id, e.nombre, l.tipo_vehiculo
         ORDER BY e.nombre, total_lavados DESC
         """,
@@ -159,7 +159,7 @@ async def tendencia_ingresos(
             COALESCE(SUM(precio_total), 0) AS ingresos,
             COUNT(id) AS lavados
         FROM lavados
-        WHERE lavadero_id = $1 AND estado != 'cancelado' 
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' 
           AND fecha >= date_trunc('month', CURRENT_DATE - INTERVAL '5 months')
         GROUP BY date_trunc('month', fecha)
         ORDER BY date_trunc('month', fecha) ASC
@@ -207,7 +207,7 @@ async def estadisticas_cancelados(
             e.nombre AS empleado_nombre, l.motivo_cancelacion
         FROM lavados l
         LEFT JOIN empleados e ON l.empleado_id = e.id
-        WHERE l.lavadero_id = $1 AND l.estado = 'cancelado' AND l.{filtros[periodo].replace('fecha', 'fecha')}
+        WHERE l.lavadero_id = $1 AND l.estado_actual = 'cancelado' AND l.{filtros[periodo].replace('fecha', 'fecha')}
         ORDER BY l.hora_cancelado DESC
         """,
         lavadero_id
@@ -251,7 +251,7 @@ async def tendencia_diaria(
             COALESCE(SUM(precio_total), 0) AS ingresos,
             COUNT(id) AS lavados
         FROM lavados
-        WHERE lavadero_id = $1 AND estado != 'cancelado' AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
         GROUP BY fecha
         ORDER BY fecha ASC
         """,
@@ -278,7 +278,7 @@ async def horas_pico(
             EXTRACT(HOUR FROM hora_ingreso) as hora,
             COUNT(id) as lavados
         FROM lavados
-        WHERE lavadero_id = $1 AND estado != 'cancelado' AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
         GROUP BY EXTRACT(HOUR FROM hora_ingreso)
         ORDER BY hora ASC
         """,
@@ -303,7 +303,7 @@ async def clientes_recurrentes(
         SELECT 
             placa, COUNT(id) as visitas
         FROM lavados
-        WHERE lavadero_id = $1 AND estado != 'cancelado'
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado'
         GROUP BY placa
         """,
         lavadero_id
@@ -333,7 +333,7 @@ async def servicios_mas_vendidos(
             COUNT(id) as total,
             COALESCE(SUM(precio_total), 0) as ingresos
         FROM lavados
-        WHERE lavadero_id = $1 AND estado != 'cancelado' AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
         GROUP BY COALESCE(nivel_suciedad, 'Basico')
         ORDER BY total DESC
         """,

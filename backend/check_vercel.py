@@ -14,8 +14,8 @@ def check_vercel():
 
     print("\nRevisando registro...")
     try:
-        data = json.dumps({"email": "test@test.com", "password": "pass", "nombre": "test", "plan": "pro"}).encode()
-        req2 = urllib.request.Request("https://aquawash-lemon.vercel.app/auth/registro", data=data, headers={"Content-Type": "application/json"})
+        data = json.dumps({"estado": "cancelado", "motivo_cancelacion": "Test"}).encode()
+        req2 = urllib.request.Request("https://aquawash-lemon.vercel.app/lavados/123/estado", data=data, headers={"Content-Type": "application/json"}, method="PATCH")
         with urllib.request.urlopen(req2) as resp2:
             print(resp2.status, resp2.read().decode())
     except Exception as e:
