@@ -10,7 +10,8 @@ export default function Register() {
   const [error, setError]     = useState(null)
   const [form, setForm]       = useState({
     nombre_lavadero: '', ciudad: '', telefono: '',
-    email: '', password: '', confirmar: ''
+    email: '', password: '', confirmar: '',
+    pin_dueno: '', pin_operario: ''
   })
 
   function handleChange(e) {
@@ -23,6 +24,7 @@ export default function Register() {
     if (form.password !== form.confirmar) return setError('Las contrasenas no coinciden')
     if (form.password.length < 8) return setError('La contrasena debe tener al menos 8 caracteres')
     if (!form.nombre_lavadero.trim()) return setError('El nombre del lavadero es obligatorio')
+    if (form.pin_dueno.length !== 4 || form.pin_operario.length !== 4) return setError('Los PINs deben ser de exactamente 4 dígitos')
 
     setLoading(true)
     try {
@@ -32,6 +34,8 @@ export default function Register() {
         telefono: form.telefono,
         email:    form.email,
         password: form.password,
+        pin_dueno: form.pin_dueno,
+        pin_operario: form.pin_operario,
         plan:     'pro' // Siempre asignado al plan Pro
       })
       localStorage.setItem('aw_token', data.access_token)
@@ -98,6 +102,21 @@ export default function Register() {
                 <input className="input-base" type="password" name="confirmar"
                   placeholder="Repite la contraseña"
                   value={form.confirmar} onChange={handleChange} required />
+              </div>
+            </div>
+            
+            <div className="form-grid" style={{ marginBottom:14 }}>
+              <div className="form-group">
+                <label className="form-label">PIN Dueño (Administrador)</label>
+                <input className="input-base" type="text" name="pin_dueno"
+                  placeholder="Ej: 9999" maxLength="4" pattern="\d{4}"
+                  value={form.pin_dueno} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">PIN Operario (Cajero)</label>
+                <input className="input-base" type="text" name="pin_operario"
+                  placeholder="Ej: 1111" maxLength="4" pattern="\d{4}"
+                  value={form.pin_operario} onChange={handleChange} required />
               </div>
             </div>
 

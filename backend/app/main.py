@@ -16,14 +16,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global Exception Handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Error global inesperado: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Ha ocurrido un error interno en el servidor."},
-    )
+# Global Exception Handler (Desactivado para debugear)
+# @app.exception_handler(Exception)
+# async def global_exception_handler(request: Request, exc: Exception):
+#     logger.error(f"Error global inesperado: {exc}", exc_info=True)
+#     return JSONResponse(
+#         status_code=500,
+#         content={"detail": "Ha ocurrido un error interno en el servidor."},
+#     )
 
 @app.on_event("startup")
 async def startup():

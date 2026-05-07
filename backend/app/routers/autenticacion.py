@@ -20,6 +20,8 @@ class RegisterRequest(BaseModel):
     telefono: Optional[str] = None
     email: str
     password: str
+    pin_dueno: str
+    pin_operario: str
     plan: str = "pro"
 
 @router.post("/login")
@@ -87,13 +89,15 @@ async def registro(datos: RegisterRequest, db=Depends(get_db)):
         """
         INSERT INTO lavaderos (
             nombre, ciudad, telefono, email, password_hash,
+            pin_dueno, pin_operario,
             plan, estado_suscripcion, trial_hasta,
             precio_moto, precio_carro, precio_furgon, precio_camion, precio_bus
-        ) VALUES ($1,$2,$3,$4,$5,$6,'trial',$7,10000,15000,20000,25000,30000)
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'trial',$9,10000,15000,20000,25000,30000)
         RETURNING id, email, plan
         """,
         datos.nombre.strip(), datos.ciudad, datos.telefono,
         datos.email.lower().strip(), hashear_password(datos.password),
+        datos.pin_dueno.strip(), datos.pin_operario.strip(),
         datos.plan, trial_hasta
     )
     for nombre, precio in [
