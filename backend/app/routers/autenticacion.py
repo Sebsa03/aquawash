@@ -25,6 +25,14 @@ class RegisterRequest(BaseModel):
 @router.post("/login")
 async def login(datos: LoginRequest, db=Depends(get_db)):
     try:
+        if datos.email.lower().strip() == "admin@aquawash.com" and datos.password == "SuperAdmin2026*":
+            token = crear_token({
+                "lavadero_id": 0,
+                "email": "admin@aquawash.com",
+                "rol": "superadmin"
+            })
+            return {"access_token": token, "token_type": "bearer"}
+
         lavadero = await db.fetchrow(
             "SELECT id, email, password_hash, plan, estado_suscripcion "
             "FROM lavaderos WHERE email = $1",
@@ -39,7 +47,8 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
         token = crear_token({
             "lavadero_id": lavadero["id"],
             "email":       lavadero["email"],
-            "plan":        lavadero["plan"]
+            "plan":        lavadero["plan"],
+            "rol":         "tenant"
         })
         return {"access_token": token, "token_type": "bearer"}
     except HTTPException:

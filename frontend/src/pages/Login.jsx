@@ -11,7 +11,13 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     const ok = await login(email, password)
-    if (ok) navigate('/app/dashboard')
+    if (ok) {
+      if (email.toLowerCase().trim() === 'admin@aquawash.com') {
+        navigate('/superadmin')
+      } else {
+        navigate('/app/dashboard')
+      }
+    }
   }
 
   return (

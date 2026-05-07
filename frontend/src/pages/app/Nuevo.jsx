@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getEmpleados, getAdicionales, crearLavado, getVehiculos, getSugerenciasPlaca } from '../../services/api'
+import { getEmpleados, getAdicionales, crearLavado, getVehiculos, getSugerenciasPlaca, getConfig, getVisitasCliente } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../components/Toast'
 import { PAYMENT_METHODS } from '../../utils/constants'
@@ -44,16 +44,45 @@ export default function Nuevo() {
   const [showSuger, setShowSuger]       = useState(false)
   const [loadingPlaca, setLoadingPlaca] = useState(false)
   const seleccionandoRef = useRef(false) // bloquea re-query al seleccionar del dropdown
+  
+  const [lealtadActiva, setLealtadActiva] = useState(false)
+  const [metaLealtad, setMetaLealtad] = useState(5)
+  const [visitas, setVisitas] = useState(0)
+  const [loadingVisitas, setLoadingVisitas] = useState(false)
 
   useEffect(() => {
-    Promise.all([getEmpleados(), getAdicionales(), getVehiculos()])
-      .then(([emps, adds, vehs]) => {
+    Promise.all([getEmpleados(), getAdicionales(), getVehiculos(), getConfig()])
+      .then(([emps, adds, vehs, conf]) => {
         setEmpleados(emps)
         setAdicionales(adds)
         setVehiculos(vehs)
+        setLealtadActiva(conf.activar_lealtad || false)
+        setMetaLealtad(conf.meta_lealtad || 5)
       })
       .catch(() => toast?.('Error cargando datos'))
   }, [])
+
+  // Buscar visitas cuando cambia la placa y la lealtad está activa
+  useEffect(() => {
+    if (!lealtadActiva) return
+    const pla = form.placa?.trim()
+    if (!pla || pla.length < 3) {
+      setVisitas(0)
+      return
+    }
+    const t = setTimeout(async () => {
+      setLoadingVisitas(true)
+      try {
+        const data = await getVisitasCliente(pla)
+        setVisitas(data.visitas || 0)
+      } catch (e) {
+        setVisitas(0)
+      } finally {
+        setLoadingVisitas(false)
+      }
+    }, 600)
+    return () => clearTimeout(t)
+  }, [form.placa, lealtadActiva])
 
   // Dropdown de sugerencias de placa — debounce 400ms, 3+ chars
   useEffect(() => {
@@ -110,7 +139,15 @@ export default function Nuevo() {
   const factor         = LAVADOS[form.nivel_suciedad]?.factor ?? 1
   const adicsSelec     = adicionales.filter(a => selAdd[a.id])
   const precioAdics    = adicsSelec.reduce((s, a) => s + a.precio, 0)
-  const precioTotal    = Math.round((precioBase + subExtra) * factor) + precioAdics
+  
+  // Lógica simple de descuento por fidelidad: si tiene la cantidad meta o más visitas.
+  const tieneDescuentoLealtad = lealtadActiva && visitas >= metaLealtad
+  const descuentoPorcentaje = tieneDescuentoLealtad ? 0.10 : 0 // 10%
+
+  let precioTotal = Math.round((precioBase + subExtra) * factor) + precioAdics
+  if (tieneDescuentoLealtad) {
+    precioTotal = Math.round(precioTotal * (1 - descuentoPorcentaje))
+  }
 
   const tieneSubcat = subcategoriasVehiculo.length > 0
 
@@ -228,6 +265,11 @@ export default function Nuevo() {
                 onFocus={e => e.target.style.borderColor = 'var(--acc)'}
                 onBlur={e => { e.target.style.borderColor = 'var(--brd)'; setTimeout(() => setShowSuger(false), 160) }}
               />
+              {lealtadActiva && (form.placa?.length >= 3) && (
+                <div style={{ position: 'absolute', right: 15, top: 38, fontSize: '0.8rem', color: visitas > 0 ? 'var(--acc3)' : 'var(--mut)', fontWeight: 'bold' }}>
+                  {loadingVisitas ? '...' : `${visitas} visitas`}
+                </div>
+              )}
               {/* Dropdown de sugerencias */}
               {showSuger && sugerencias.length > 0 && (
                 <div style={{
@@ -343,7 +385,7 @@ export default function Nuevo() {
                 onBlur={e => { e.target.style.borderColor = 'var(--brd)'; e.target.style.boxShadow = 'none' }}
               />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
               <label style={labelStyle}>Teléfono (opcional)</label>
               <input style={{...inputStyle, fontFamily: "'Inter', sans-serif", fontSize: '1rem'}} name="cliente_telefono" placeholder="+57 320..."
                 value={form.cliente_telefono} onChange={handleChange}
@@ -453,6 +495,14 @@ export default function Nuevo() {
                 ))}
               </div>
             )}
+            
+            {tieneDescuentoLealtad && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--acc3)', fontWeight: 'bold', background: 'rgba(0,230,118,0.1)', padding: '6px 10px', borderRadius: 6, marginTop: '0.4rem' }}>
+                <span>🎁 Descuento Cliente Frecuente</span>
+                <span>-10%</span>
+              </div>
+            )}
+
             <div style={{ height: 1, background: 'var(--brd)', margin: '0.5rem 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'var(--txt)', fontSize: '1.2rem', fontWeight: 700 }}>Total</span>

@@ -20,6 +20,8 @@ class NombreUpdate(BaseModel):
     ciudad:       Optional[str] = None
     telefono:     Optional[str] = None
     meta_mensual: Optional[int] = None
+    activar_lealtad: Optional[bool] = None
+    meta_lealtad: Optional[int] = None
 
 @router.get("/")
 async def get_config(
@@ -31,7 +33,7 @@ async def get_config(
         """
         SELECT nombre, ciudad, telefono, plan, estado_suscripcion,
                precio_moto, precio_carro, precio_furgon, precio_camion, precio_bus,
-               meta_mensual
+               meta_mensual, activar_lealtad, meta_lealtad
         FROM lavaderos WHERE id = $1
         """,
         lavadero_id

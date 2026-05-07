@@ -16,6 +16,7 @@ import Empleados    from './pages/app/Empleados'
 import Config       from './pages/app/Config'
 import Caja         from './pages/app/Caja'
 import Inventario   from './pages/app/Inventario'
+import SuperAdmin   from './pages/app/SuperAdmin'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -48,6 +49,12 @@ export default function App() {
             <Route path="caja"         element={<Caja />} />
             <Route path="inventario"   element={<Inventario />} />
           </Route>
+
+          <Route path="/superadmin" element={
+            <ProtectedRoute>
+              <SuperAdmin />
+            </ProtectedRoute>
+          } />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

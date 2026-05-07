@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+import asyncio
 from app.database import get_db
 from app.routers.auth import get_lavadero_actual
 from app.models.schemas import LavadoCrear, LavadoRespuesta
@@ -87,6 +88,19 @@ async def procesar_consumo_inventario(db, lavadero_id: int, lavado: dict):
                 "INSERT INTO movimientos_inventario (lavadero_id, producto_id, tipo, cantidad, motivo) VALUES ($1, $2, 'consumo', $3, $4)",
                 lavadero_id, p_id, cant_consumir, motivo
             )
+
+async def enviar_notificacion_whatsapp(telefono: str, placa: str, lavadero_nombre: str):
+    """
+    Simula el envío de una notificación por WhatsApp mediante un Webhook.
+    """
+    if not telefono or len(telefono) < 5:
+        return
+        
+    print(f"🚀 [WEBHOOK] Iniciando envío de WhatsApp a {telefono} para placa {placa}...")
+    await asyncio.sleep(2) # Simular latencia de red
+    
+    # Aquí iría un httpx.post("https://api.twilio.com/...", json={...})
+    print(f"✅ [WEBHOOK] Mensaje enviado a {telefono}: 'Hola, tu vehículo {placa} ya está terminado en {lavadero_nombre}. ¡Te esperamos!'")
 
 @router.post("/", response_model=LavadoRespuesta, status_code=201)
 async def registrar_lavado(
@@ -281,6 +295,30 @@ async def buscar_por_placa(
     return dict(fila)
 
 
+@router.get("/cliente/{placa}/visitas")
+async def buscar_visitas_cliente(
+    placa: str,
+    db=Depends(get_db),
+    lavadero_id: int = Depends(get_lavadero_actual)
+):
+    """
+    Devuelve la cantidad de lavados 'terminados' o 'entregados' asociados a una placa.
+    Útil para el plan de fidelización.
+    """
+    if not placa or len(placa.strip()) < 3:
+        return {"visitas": 0}
+
+    visitas = await db.fetchval(
+        """
+        SELECT COUNT(*)
+        FROM lavados
+        WHERE lavadero_id = $1
+          AND UPPER(placa) = UPPER($2)
+          AND estado_actual IN ('terminado', 'entregado')
+        """,
+        lavadero_id, placa.strip()
+    )
+    return {"visitas": visitas or 0}
 
 from app.models.schemas import LavadoCrear, LavadoRespuesta, EstadoActualizar, LavadoActualizar
 
@@ -289,11 +327,17 @@ from app.models.schemas import LavadoCrear, LavadoRespuesta, EstadoActualizar, L
 async def actualizar_estado_lavado(
     lavado_id: int,
     datos: EstadoActualizar,
+    background_tasks: BackgroundTasks,
     db=Depends(get_db),
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Actualiza el estado de un lavado y registra la hora local del cambio. Si se cancela, almacena el motivo."""
-    fila_previa = await db.fetchrow("SELECT id, fecha, estado_actual FROM lavados WHERE id = $1 AND lavadero_id = $2", lavado_id, lavadero_id)
+    fila_previa = await db.fetchrow(
+        "SELECT l.id, l.fecha, l.estado_actual, l.placa, l.cliente_telefono, lav.nombre AS lavadero_nombre "
+        "FROM lavados l JOIN lavaderos lav ON l.lavadero_id = lav.id "
+        "WHERE l.id = $1 AND l.lavadero_id = $2", 
+        lavado_id, lavadero_id
+    )
     if not fila_previa:
         raise HTTPException(status_code=404, detail="Lavado no encontrado")
         
@@ -341,6 +385,17 @@ async def actualizar_estado_lavado(
     estado_previo = fila_previa["estado_actual"]
     if datos.estado in ("terminado", "entregado") and estado_previo in ("espera", "lavando"):
         await procesar_consumo_inventario(db, lavadero_id, dict(fila))
+        
+    # Disparar webhook de WhatsApp en background si pasa a "terminado"
+    if datos.estado == "terminado" and estado_previo != "terminado":
+        telefono = fila_previa.get("cliente_telefono")
+        if telefono:
+            background_tasks.add_task(
+                enviar_notificacion_whatsapp, 
+                telefono, 
+                fila_previa["placa"], 
+                fila_previa["lavadero_nombre"]
+            )
         
     return parse_lavado(fila)
 

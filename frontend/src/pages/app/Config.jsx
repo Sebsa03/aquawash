@@ -14,7 +14,7 @@ export default function Config() {
   // Data State
   const [adicionales, setAdicionales] = useState([])
   const [vehiculos, setVehiculos] = useState([])
-  const [perfil, setPerfil] = useState({ nombre: '', ciudad: '', telefono: '' })
+  const [perfil, setPerfil] = useState({ nombre: '', ciudad: '', telefono: '', activar_lealtad: false, meta_lealtad: 5 })
 
   // Edit States
   const [nuevoAdNombre, setNuevoAdNombre] = useState('')
@@ -61,7 +61,9 @@ export default function Config() {
       setPerfil({
         nombre: conf.nombre || '',
         ciudad: conf.ciudad || '',
-        telefono: conf.telefono || ''
+        telefono: conf.telefono || '',
+        activar_lealtad: conf.activar_lealtad || false,
+        meta_lealtad: conf.meta_lealtad || 5
       })
     } catch (e) {
       toast?.('Error cargando configuración')
@@ -77,7 +79,9 @@ export default function Config() {
       await actualizarPerfil({
         nombre: perfil.nombre,
         ciudad: perfil.ciudad,
-        telefono: perfil.telefono
+        telefono: perfil.telefono,
+        activar_lealtad: perfil.activar_lealtad,
+        meta_lealtad: parseInt(perfil.meta_lealtad) || 5
       })
       toast?.('✔ Perfil guardado exitosamente')
     } catch (e) {
@@ -246,6 +250,28 @@ export default function Config() {
             <label style={{ fontSize: '0.8rem', color: 'var(--mut)', marginBottom: '4px', display: 'block' }}>Ciudad</label>
             <input value={perfil.ciudad} onChange={e => setPerfil({ ...perfil, ciudad: e.target.value })}
               style={{ width: '100%', padding: '0.8rem', background: 'var(--sur)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--txt)' }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1rem', background: 'rgba(0,230,118,0.05)', borderRadius: 8, border: '1px dashed rgba(0,230,118,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ color: 'var(--txt)', fontWeight: 'bold', fontSize: '0.9rem' }}>Plan de Fidelización</div>
+                <div style={{ color: 'var(--mut)', fontSize: '0.75rem', marginTop: 2 }}>Mostrar visitas del cliente y aplicar descuento</div>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={perfil.activar_lealtad} onChange={e => setPerfil({ ...perfil, activar_lealtad: e.target.checked })} style={{ display: 'none' }} />
+                <div style={{ width: 40, height: 20, background: perfil.activar_lealtad ? 'var(--acc3)' : 'var(--sur2)', borderRadius: 20, position: 'relative', transition: 'background 0.3s' }}>
+                  <div style={{ position: 'absolute', top: 2, left: perfil.activar_lealtad ? 22 : 2, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'left 0.3s' }} />
+                </div>
+              </label>
+            </div>
+            {perfil.activar_lealtad && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--mut)' }}>Lavados para recompensa:</span>
+                <input type="number" value={perfil.meta_lealtad} onChange={e => setPerfil({ ...perfil, meta_lealtad: e.target.value })}
+                  style={{ width: 60, padding: '0.4rem', background: 'var(--sur)', border: '1px solid var(--brd)', borderRadius: 4, color: 'var(--txt)', textAlign: 'center' }} />
+              </div>
+            )}
           </div>
 
           <button className="btn-primary" onClick={handleGuardarPerfil} disabled={savingPerfil} style={{ marginTop: '0.5rem', padding: '0.9rem', width: '100%' }}>

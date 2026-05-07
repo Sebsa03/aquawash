@@ -44,6 +44,7 @@ export const actualizarEstadoLavado = (id, estado, motivo = null) => request('PA
 export const actualizarLavado = (id, data) => request('PATCH', `/lavados/${id}`, data)
 export const getBuscarPlaca = (placa) => request('GET', `/lavados/placa/${encodeURIComponent(placa)}`)
 export const getSugerenciasPlaca = (q) => request('GET', `/lavados/sugerencias-placa?q=${encodeURIComponent(q)}`)
+export const getVisitasCliente = (placa) => request('GET', `/lavados/cliente/${encodeURIComponent(placa)}/visitas`)
 
 // EMPLEADOS
 export const getEmpleados    = ()       => request('GET', '/empleados/')
@@ -115,3 +116,7 @@ export const eliminarReceta = (id) => request('DELETE', `/inventario/recetas/${i
 // MOVIMIENTOS INVENTARIO
 export const getMovimientosInventario = () => request('GET', '/inventario/movimientos')
 export const crearMovimientoInventario = (data) => request('POST', '/inventario/movimientos', data)
+
+// SUPER ADMIN
+export const getTodosLavaderos = () => request('GET', '/superadmin/lavaderos')
+export const actualizarEstadoLavadero = (id, estado) => request('PATCH', `/superadmin/lavaderos/${id}/estado`, { estado_suscripcion: estado })
