@@ -358,7 +358,12 @@ async def actualizar_estado_lavado(
                 motivo_cancelacion = $4,
                 precio_base = 0,
                 precio_adicionales = 0,
-                precio_total = 0
+                precio_total = 0,
+                adicionales_aplicados = '[]'::jsonb,
+                subcategoria = NULL,
+                nota = NULL,
+                metodo_pago = NULL,
+                empleado_id = NULL
             WHERE id = $2 AND lavadero_id = $3
             RETURNING *
             """,
