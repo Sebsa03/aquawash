@@ -11,8 +11,8 @@ async def conectar():
     global pool
     pool = await asyncpg.create_pool(
         settings.database_url,
-        min_size=2,   # conexiones mínimas siempre activas
-        max_size=10   # máximo de conexiones simultáneas
+        min_size=1,   # conexiones mínimas siempre activas
+        max_size=3    # máximo de conexiones simultáneas (optimizado para Serverless/Vercel)
     )
 
 async def desconectar():
