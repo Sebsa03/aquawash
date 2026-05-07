@@ -85,7 +85,7 @@ class LavadoRespuesta(BaseModel):
     nivel_suciedad:       Optional[str]
     cliente_nombre:       Optional[str]
     cliente_telefono:     Optional[str]
-    metodo_pago:          str
+    metodo_pago:          Optional[str]
     estado_actual:        str
     hora_lavando:         Optional[time]
     hora_terminado:       Optional[time]
