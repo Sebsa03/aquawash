@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import date, timedelta
 from pydantic import BaseModel
 from app.routers.auth import verificar_password, crear_token, hashear_password, get_lavadero_actual
+from app.config import settings
 
 router = APIRouter()
 
@@ -27,10 +28,10 @@ class RegisterRequest(BaseModel):
 @router.post("/login")
 async def login(datos: LoginRequest, db=Depends(get_db)):
     try:
-        if datos.email.lower().strip() == "admin@aquawash.com" and datos.password == "SuperAdmin2026*":
+        if datos.email.lower().strip() == settings.superadmin_email.lower().strip() and datos.password == settings.superadmin_password:
             token = crear_token({
                 "lavadero_id": 0,
-                "email": "admin@aquawash.com",
+                "email": settings.superadmin_email,
                 "rol": "superadmin"
             })
             return {"access_token": token, "token_type": "bearer"}
