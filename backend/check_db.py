@@ -1,20 +1,26 @@
 import asyncio
 import asyncpg
+import os
+from dotenv import load_dotenv
 
-async def run():
-    conn = await asyncpg.connect('postgresql://postgres:2003@localhost:5432/lavadero')
-    print("--- RECETAS ---")
-    rows = await conn.fetch("SELECT * FROM recetas")
-    for r in rows: print(dict(r))
+load_dotenv()
+
+async def main():
+    conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
     
-    print("--- MOVIMIENTOS ---")
-    rows = await conn.fetch("SELECT * FROM movimientos_inventario")
-    for r in rows: print(dict(r))
-    
-    print("--- LAVADOS ---")
-    rows = await conn.fetch("SELECT id, placa, tipo_vehiculo, subcategoria, estado_actual, adicionales_aplicados FROM lavados ORDER BY id DESC LIMIT 5")
-    for r in rows: print(dict(r))
-    
+    # 1. Ver qué columnas tiene lavaderos
+    print("--- SCHEMA LAVADEROS ---")
+    filas = await conn.fetch("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'lavaderos'")
+    for f in filas:
+        print(f["column_name"], f["data_type"])
+        
+    # 2. Ver lavaderos actuales
+    print("\n--- LAVADEROS ---")
+    lavs = await conn.fetch("SELECT id, nombre FROM lavaderos")
+    for l in lavs:
+        print(l["id"], l["nombre"])
+        
     await conn.close()
 
-asyncio.run(run())
+if __name__ == "__main__":
+    asyncio.run(main())

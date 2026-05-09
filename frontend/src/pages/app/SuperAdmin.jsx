@@ -52,6 +52,7 @@ export default function SuperAdmin() {
               <th style={{ padding: '1rem' }}>Nombre</th>
               <th style={{ padding: '1rem' }}>Ciudad</th>
               <th style={{ padding: '1rem' }}>Email / Tel</th>
+              <th style={{ padding: '1rem' }}>Registro</th>
               <th style={{ padding: '1rem' }}>Plan</th>
               <th style={{ padding: '1rem' }}>Estado</th>
               <th style={{ padding: '1rem' }}>Acciones</th>
@@ -66,6 +67,9 @@ export default function SuperAdmin() {
                 <td style={{ padding: '1rem' }}>
                   <div>{l.email}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--mut)' }}>{l.telefono}</div>
+                </td>
+                <td style={{ padding: '1rem', color: 'var(--mut)', fontSize: '0.85rem' }}>
+                  {l.creado_en ? new Date(l.creado_en).toLocaleDateString('es-CO') : '-'}
                 </td>
                 <td style={{ padding: '1rem' }}>
                   <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: 12, fontSize: '0.8rem' }}>{l.plan}</span>
