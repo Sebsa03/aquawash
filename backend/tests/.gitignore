@@ -1,0 +1,19 @@
+# Pytest
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Reportes y logs
+report.html
+logs/
+*.log
+
+# WebDriver logs
+geckodriver.log
+
+# Screenshots (si se implementan)
+screenshots/
+
+# Venv
+venv/
+.venv/

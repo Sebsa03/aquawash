@@ -1,10 +1,14 @@
 import asyncpg
 from app.config import settings
+from typing import Optional
+from asyncpg.pool import Pool
 
 # Pool de conexiones — en lugar de abrir y cerrar una conexión
 # por cada petición, se mantiene un grupo de conexiones listas
 # para usar. Más eficiente y soporta múltiples lavaderos simultáneos.
-pool = None
+# Anotamos el tipo para que el analizador sepa que `pool` puede ser
+# un `Pool` o `None` (antes lo veía solo como `None`).
+pool: Optional[Pool] = None
 
 async def conectar():
     """Abre el pool de conexiones al iniciar el servidor."""
@@ -27,5 +31,10 @@ async def get_db():
     Cada endpoint que necesite la BD recibe una conexión,
     la usa, y se devuelve automáticamente al pool.
     """
+    # Asegurarse al tiempo de ejecución de que el pool fue inicializado;
+    # también ayuda al comprobador de tipos/static analysis.
+    if pool is None:
+        raise RuntimeError("Connection pool not initialized")
+
     async with pool.acquire() as conexion:
         yield conexion

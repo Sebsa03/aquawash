@@ -6,3 +6,13 @@ python-jose[cryptography]==3.3.0
 bcrypt==3.2.2
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
+
+# Selenium for E2E testing
+selenium==4.15.2
+webdriver-manager==4.0.1
+pytest==7.4.3
+pytest-xdist==3.5.0
+pytest-asyncio==0.21.1
+sendgrid==6.11.0
+google-auth==2.23.0
+psycopg2-binary==2.9.9
