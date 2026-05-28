@@ -89,6 +89,56 @@ def send_recovery_email(to_email: str, subject: str, link: str):
         print(f"❌ Error al enviar correo SendGrid: {e}")
         raise HTTPException(status_code=500, detail="Error al enviar el correo de recuperación")
 
+async def ensure_demo_account(db):
+    email = "demo@aquawash.com"
+    demo = await db.fetchrow(
+        "SELECT id, email, plan, estado_suscripcion FROM lavaderos WHERE email = $1",
+        email
+    )
+    if demo:
+        return demo
+
+    trial_hasta = date.today() + timedelta(days=365)
+    password_hash = hashear_password("demo1234")
+    demo = await db.fetchrow(
+        """
+        INSERT INTO lavaderos (
+            nombre, ciudad, telefono, email, password_hash,
+            pin_dueno, pin_operario, plan, estado_suscripcion, trial_hasta,
+            precio_moto, precio_carro, precio_furgon, precio_camion, precio_bus,
+            pais, moneda, auth_provider, provider_id
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'activa',$9,10000,15000,20000,25000,30000,$10,$11,'local',NULL)
+        RETURNING id, email, plan, estado_suscripcion
+        """,
+        "Demo Lavadero", "Bogotá", "3000000000", email, password_hash,
+        "9999", "1111", "pro", trial_hasta,
+        "CO", "COP"
+    )
+
+    for nombre_adicional, precio in [
+        ("Aspirado",5000), ("Encerado",8000),
+        ("Lavado de motor",12000), ("Pulida de rines",6000), ("Ambientador",3000)
+    ]:
+        await db.execute(
+            "INSERT INTO adicionales_catalogo (lavadero_id, nombre, precio) VALUES ($1,$2,$3)",
+            demo["id"], nombre_adicional, precio
+        )
+
+    await db.execute(
+        "INSERT INTO empleados (lavadero_id, nombre) VALUES ($1,$2)",
+        demo["id"], "Carlos Martínez"
+    )
+    await db.execute(
+        "INSERT INTO empleados (lavadero_id, nombre) VALUES ($1,$2)",
+        demo["id"], "Leo Torres"
+    )
+    await db.execute(
+        "INSERT INTO empleados (lavadero_id, nombre) VALUES ($1,$2)",
+        demo["id"], "Andrés Gómez"
+    )
+
+    return demo
+
 @router.post("/login")
 async def login(datos: LoginRequest, db=Depends(get_db)):
     try:
@@ -106,7 +156,10 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
             datos.email.lower().strip()
         )
         if not lavadero:
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+            if datos.email.lower().strip() == 'demo@aquawash.com' and datos.password == 'demo1234':
+                lavadero = await ensure_demo_account(db)
+            else:
+                raise HTTPException(status_code=401, detail="Credenciales incorrectas")
         
         if lavadero["auth_provider"] == "google" and not lavadero["password_hash"]:
             raise HTTPException(status_code=401, detail="Esta cuenta se registró con Google. Usa el botón de Google para iniciar sesión.")

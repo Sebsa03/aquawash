@@ -25,7 +25,7 @@ async def setup():
             RETURNING id
             """,
             "Demo Lavadero", "Bogotá", "3000000000", email, hashear_password("demo1234"),
-            "pro", "activo", date.today() + timedelta(days=365),
+            "pro", "activa", date.today() + timedelta(days=365),
             10000, 15000, 20000, 25000, 30000
         )
         for nom, p in [("Aspirado",5000),("Encerado",8000),("Motor",12000),("Rines",6000)]:
