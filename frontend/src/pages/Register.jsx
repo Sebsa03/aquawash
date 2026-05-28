@@ -4,6 +4,8 @@ import { GoogleLogin } from '@react-oauth/google'
 import { registro, googleLogin } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
+const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
+
 export default function Register() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -165,26 +167,32 @@ export default function Register() {
         <p style={{ fontSize:14, color:'var(--mut)', marginTop:6 }}>Versión Pro — 7 días gratis sin tarjeta</p>
       </div>
 
-      <div style={{ maxWidth:520, margin:'0 auto' }}>
-        <div style={{ background:'var(--sur)', border:'1px solid var(--brd)', borderRadius:14, padding:'2rem 1.8rem' }}>
+      <div style={{ maxWidth:720, margin:'0 auto' }}>
+        <div style={{ background:'var(--sur)', border:'1px solid var(--brd)', borderRadius:14, padding:'2rem 2rem' }}>
           <h2 style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:'1.5rem', letterSpacing:2, marginBottom:22, textAlign: 'center' }}>
             Crea tu cuenta
           </h2>
 
           {!needsGoogleComplete && (
-            <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
-              <GoogleLogin
-                onSuccess={onGoogleSuccess}
-                onError={() => setError('Error en el inicio con Google. Intenta otra vez.')}
-              />
-              <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-                O regístrate con tu correo y contraseña
+            GOOGLE_ENABLED ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
+                <GoogleLogin
+                  onSuccess={onGoogleSuccess}
+                  onError={() => setError('Error en el inicio con Google. Intenta otra vez.')}
+                />
+                <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
+                  O regístrate con tu correo y contraseña
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={{ marginBottom:20, textAlign:'center', color:'var(--mut)', fontSize:13 }}>
+                Registro con Google no está disponible.
+              </div>
+            )
           )}
 
           <form onSubmit={needsGoogleComplete ? handleGoogleComplete : handleSubmit}>
-            <div className="form-grid" style={{ marginBottom:14 }}>
+            <div style={{ display:'grid', gap:14, marginBottom:14 }}>
               <div className="form-group">
                 <label className="form-label">Nombre del lavadero</label>
                 <input className="input-base" name="nombre_lavadero"
@@ -204,7 +212,7 @@ export default function Register() {
                 placeholder="3001234567"
                 value={form.telefono} onChange={handleChange} />
             </div>
-            <div className="form-grid" style={{ marginBottom:14 }}>
+            <div style={{ display:'grid', gap:14, marginBottom:14 }}>
               <div className="form-group">
                 <label className="form-label">Pais</label>
                 <select className="input-base" name="pais" value={form.pais} onChange={handleCountryChange}>
@@ -228,7 +236,7 @@ export default function Register() {
                 value={form.email} onChange={handleChange} required readOnly={needsGoogleComplete} />
             </div>
             {!needsGoogleComplete && (
-              <div className="form-grid" style={{ marginBottom:14 }}>
+              <div style={{ display:'grid', gap:14, marginBottom:14 }}>
                 <div className="form-group">
                   <label className="form-label">Contraseña</label>
                   <input className="input-base" type="password" name="password"
@@ -243,7 +251,7 @@ export default function Register() {
                 </div>
               </div>
             )}
-            <div className="form-grid" style={{ marginBottom:14 }}>
+            <div style={{ display:'grid', gap:14, marginBottom:14 }}>
               <div className="form-group">
                 <label className="form-label">PIN Dueño (Administrador)</label>
                 <input className="input-base" type="text" name="pin_dueno"
