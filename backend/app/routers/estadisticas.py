@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from app.database import get_db
 from app.routers.auth import get_lavadero_actual
+from app.utils.sql_filters import build_period_filter
 
 router = APIRouter()
 
@@ -27,13 +28,7 @@ async def resumen_por_periodo(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Estadísticas generales filtradas por período."""
-    filtros = {
-        "hoy":        "fecha = CURRENT_DATE",
-        "semana":     "fecha >= CURRENT_DATE - INTERVAL '7 days'",
-        "mes":        "fecha >= date_trunc('month', CURRENT_DATE)",
-        "mes_pasado": "fecha >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') AND fecha < date_trunc('month', CURRENT_DATE)",
-        "total":      "TRUE"
-    }
+    filtro_expr = build_period_filter(periodo, alias='')
     fila = await db.fetchrow(
         f"""
         SELECT
@@ -42,7 +37,7 @@ async def resumen_por_periodo(
             COALESCE(SUM(precio_adicionales), 0) AS adicionales,
             COALESCE(AVG(precio_total), 0)       AS promedio
         FROM lavados
-        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtro_expr}
         """,
         lavadero_id
     )
@@ -56,13 +51,7 @@ async def estadisticas_por_tipo(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Desglose de lavados e ingresos por tipo de vehículo."""
-    filtros = {
-        "hoy":        "fecha = CURRENT_DATE",
-        "semana":     "fecha >= CURRENT_DATE - INTERVAL '7 days'",
-        "mes":        "fecha >= date_trunc('month', CURRENT_DATE)",
-        "mes_pasado": "fecha >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') AND fecha < date_trunc('month', CURRENT_DATE)",
-        "total":      "TRUE"
-    }
+    filtro_expr = build_period_filter(periodo, alias='')
     filas = await db.fetch(
         f"""
         SELECT
@@ -70,7 +59,7 @@ async def estadisticas_por_tipo(
             COUNT(*)                       AS total,
             COALESCE(SUM(precio_total), 0) AS ingresos
         FROM lavados
-        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtros[periodo]}
+        WHERE lavadero_id = $1 AND estado_actual != 'cancelado' AND {filtro_expr}
         GROUP BY tipo_vehiculo
         ORDER BY total DESC
         """,
@@ -86,13 +75,8 @@ async def ranking_empleados(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Ranking de empleados filtrado por período."""
-    filtros = {
-        "hoy":        "AND l.fecha = CURRENT_DATE",
-        "semana":     "AND l.fecha >= CURRENT_DATE - INTERVAL '7 days'",
-        "mes":        "AND l.fecha >= date_trunc('month', CURRENT_DATE)",
-        "mes_pasado": "AND l.fecha >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') AND l.fecha < date_trunc('month', CURRENT_DATE)",
-        "total":      ""
-    }
+    filtro_expr = build_period_filter(periodo, alias='l')
+    filtro_expr = ("AND " + filtro_expr) if filtro_expr and filtro_expr != "TRUE" else ""
     filas = await db.fetch(
         f"""
         SELECT
@@ -103,7 +87,7 @@ async def ranking_empleados(
             COALESCE(AVG(EXTRACT(EPOCH FROM (l.hora_terminado - l.hora_ingreso))/60), 0) AS minutos_promedio
         FROM empleados e
         LEFT JOIN lavados l
-            ON l.empleado_id = e.id AND l.estado_actual != 'cancelado' {filtros[periodo]}
+            ON l.empleado_id = e.id AND l.estado_actual != 'cancelado' {filtro_expr}
         WHERE e.lavadero_id = $1 AND e.activo = TRUE
         GROUP BY e.id, e.nombre
         ORDER BY total_lavados DESC
@@ -120,13 +104,8 @@ async def ranking_empleados_detalle(
     lavadero_id: int = Depends(get_lavadero_actual)
 ):
     """Desglose de rendimiento por empleado y por tipo de vehículo."""
-    filtros = {
-        "hoy":        "AND l.fecha = CURRENT_DATE",
-        "semana":     "AND l.fecha >= CURRENT_DATE - INTERVAL '7 days'",
-        "mes":        "AND l.fecha >= date_trunc('month', CURRENT_DATE)",
-        "mes_pasado": "AND l.fecha >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') AND l.fecha < date_trunc('month', CURRENT_DATE)",
-        "total":      ""
-    }
+    filtro_expr = build_period_filter(periodo, alias='l')
+    filtro_expr = ("AND " + filtro_expr) if filtro_expr and filtro_expr != "TRUE" else ""
     filas = await db.fetch(
         f"""
         SELECT
@@ -137,7 +116,7 @@ async def ranking_empleados_detalle(
             COALESCE(SUM(l.precio_total), 0)  AS total_ingresos,
             COALESCE(AVG(EXTRACT(EPOCH FROM (l.hora_terminado - l.hora_ingreso))/60), 0) AS minutos_promedio
         FROM empleados e
-        JOIN lavados l ON l.empleado_id = e.id {filtros[periodo]}
+        JOIN lavados l ON l.empleado_id = e.id {filtro_expr}
         WHERE e.lavadero_id = $1 AND l.estado_actual != 'cancelado'
         GROUP BY e.id, e.nombre, l.tipo_vehiculo
         ORDER BY e.nombre, total_lavados DESC

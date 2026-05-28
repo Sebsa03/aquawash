@@ -10,6 +10,7 @@ __pycache__/
 
 # Node
 node_modules/
+.env.local
 
 # OS
 .DS_Store

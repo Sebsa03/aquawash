@@ -1,0 +1,61 @@
+{
+  "report_date": "2026-05-28",
+  "patterns": {
+    "INSERT INTO lavaderos": [
+      {"file":"backend/app/autenticacion.py","line":61},
+      {"file":"backend/app/routers/autenticacion.py","line":105},
+      {"file":"backend/app/routers/autenticacion.py","line":226},
+      {"file":"backend/app/routers/autenticacion.py","line":300},
+      {"file":"backend/archive/setup_demo_data.py","line":21},
+      {"file":"backend/archive/update_lealtad_donsebas.py","line":33}
+    ],
+    "INSERT INTO adicionales_catalogo": [
+      {"file":"backend/app/autenticacion.py","line":77},
+      {"file":"backend/app/routers/autenticacion.py","line":123},
+      {"file":"backend/app/routers/autenticacion.py","line":246},
+      {"file":"backend/app/routers/autenticacion.py","line":320},
+      {"file":"backend/app/routers/adicionales.py","line":34},
+      {"file":"backend/archive/setup_demo_data.py","line":32},
+      {"file":"backend/archive/verificar_y_preparar_datos.py","line":77}
+    ],
+    "filtros = {": [
+      {"file":"backend/app/routers/estadisticas.py","line":30},
+      {"file":"backend/app/routers/estadisticas.py","line":59},
+      {"file":"backend/app/routers/estadisticas.py","line":89},
+      {"file":"backend/app/routers/estadisticas.py","line":123},
+      {"file":"backend/app/routers/estadisticas.py","line":196},
+      {"file":"backend/app/routers/estadisticas.py","line":242},
+      {"file":"backend/app/routers/estadisticas.py","line":269},
+      {"file":"backend/app/routers/estadisticas.py","line":323},
+      {"file":"backend/app/routers/lavados.py","line":217}
+    ],
+    "json.loads(": [
+      {"file":"backend/app/routers/config.py","line":62},
+      {"file":"backend/app/routers/config.py","line":89},
+      {"file":"backend/app/routers/config.py","line":134},
+      {"file":"backend/app/routers/lavados.py","line":18},
+      {"file":"backend/app/routers/lavados.py","line":41},
+      {"file":"backend/app/routers/lavados.py","line":141},
+      {"file":"backend/app/routers/lavados.py","line":453},
+      {"file":"backend/archive/test2.py","line":5},
+      {"file":"backend/archive/test_registro_completo.py","line":138},
+      {"file":"backend/archive/test_mov.py","line":5},
+      {"file":"backend/archive/test_superadmin.py","line":14},
+      {"file":"backend/archive/test_registro_completo_corregido.py","line":124},
+      {"file":"backend/archive/test_cancelar.py","line":9}
+    ],
+    "def parse_lavado": [
+      {"file":"backend/app/routers/lavados.py","line":11}
+    ],
+    "adicionales_aplicados": [
+      {"file":"backend/app/models/schemas.py","line":61},
+      {"file":"backend/app/models/schemas.py","line":81},
+      {"file":"backend/app/models/schemas.py","line":104},
+      {"file":"backend/app/routers/lavados.py","line":39},
+      {"file":"backend/app/routers/lavados.py","line":178},
+      {"file":"backend/app/routers/lavados.py","line":434},
+      {"file":"backend/app/routers/lavados.py","line":438}
+    ]
+  },
+  "notes": "Reporte generado por búsqueda heurística de patrones. Incluye archivos en backend/app y backend/archive. Recomendado: crear helpers en backend/app/utils y reemplazar estos puntos de copia."
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { GoogleLogin } from '@react-oauth/google'
+import GoogleAuth from '../components/GoogleAuth'
 import { registro, googleLogin } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -174,21 +174,18 @@ export default function Register() {
           </h2>
 
           {!needsGoogleComplete && (
-            GOOGLE_ENABLED ? (
-              <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
-                <GoogleLogin
-                  onSuccess={onGoogleSuccess}
-                  onError={() => setError('Error en el inicio con Google. Intenta otra vez.')}
-                />
-                <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-                  O regístrate con tu correo y contraseña
+            <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
+              <GoogleAuth
+                onSuccess={onGoogleSuccess}
+                onError={() => setError('Error en el inicio con Google. Intenta otra vez.')}
+                helperText={'O regístrate con tu correo y contraseña'}
+              />
+              {!Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID) && (
+                <div style={{ background:'rgba(255,71,87,0.08)', border:'1px solid rgba(255,71,87,0.18)', borderRadius:6, padding:'10px 14px', fontSize:12, color:'var(--dan)' }}>
+                  Para activar Google, define VITE_GOOGLE_CLIENT_ID en frontend/.env
                 </div>
-              </div>
-            ) : (
-              <div style={{ marginBottom:20, textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-                Registro con Google no está disponible.
-              </div>
-            )
+              )}
+            </div>
           )}
 
           <form onSubmit={needsGoogleComplete ? handleGoogleComplete : handleSubmit}>

@@ -1,4 +1,4 @@
-# Pruebas de Compatibilidad
+ Pruebas de Compatibilidad
 
 | ID  | Nombre de la Prueba | Precondición | Datos de Entrada | Resultado Esperado | Resultado Obtenido | Estado (Aprobado/Fallido) | Navegador/Dispositivo |
 |-----|---------------------|--------------|------------------|--------------------|--------------------|--------------------------|----------------------|

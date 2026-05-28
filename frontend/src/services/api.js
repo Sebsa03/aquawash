@@ -7,11 +7,16 @@ async function request(method, path, body = null) {
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : null,
-  })
+  let res
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+    })
+  } catch (fetchError) {
+    throw new Error('No se puede conectar con el backend. Verifica que VITE_API_URL esté correcto y que el servidor esté activo.')
+  }
 
   if (res.status === 401) {
     localStorage.removeItem('aw_token')

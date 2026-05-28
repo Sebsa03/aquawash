@@ -24,12 +24,11 @@ function makeEmpty() {
 
 // --- COMPONENT ---
 export default function Nuevo() {
-  const { role } = useAuth()
+  const { role, token } = useAuth()
   const toast = useToast()
   
   const isDemo = (() => {
     try {
-      const token = localStorage.getItem('aw_token')
       return token && JSON.parse(atob(token.split('.')[1])).email === 'demo@aquawash.com'
     } catch(e) { return false }
   })()

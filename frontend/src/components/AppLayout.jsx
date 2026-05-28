@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 import { getConfig, getCierreCaja } from '../services/api'
 
 export default function AppLayout() {
-  const { logout, role, setRole } = useAuth()
+  const { logout, role, setRole, token } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -19,13 +19,12 @@ export default function AppLayout() {
 
   useEffect(() => {
     try {
-      const token = localStorage.getItem('aw_token')
       if (token) {
         const payload = JSON.parse(atob(token.split('.')[1]))
         if (payload.email === 'demo@aquawash.com') setIsDemo(true)
       }
     } catch(e) {}
-  }, [])
+  }, [token])
 
   useEffect(() => {
     function tick() {

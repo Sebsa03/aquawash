@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import date, timedelta, datetime
 from pydantic import BaseModel
 from app.routers.auth import verificar_password, crear_token, hashear_password, get_lavadero_actual
+from app.utils.bootstrap import create_lavadero, create_default_adicionales, create_default_empleados
 from app.config import settings
 import uuid
 import os
@@ -89,6 +90,42 @@ def send_recovery_email(to_email: str, subject: str, link: str):
         print(f"❌ Error al enviar correo SendGrid: {e}")
         raise HTTPException(status_code=500, detail="Error al enviar el correo de recuperación")
 
+async def ensure_demo_account(db):
+    email = "demo@aquawash.com"
+    demo = await db.fetchrow(
+        "SELECT id, email, plan, estado_suscripcion FROM lavaderos WHERE email = $1",
+        email
+    )
+    if demo:
+        return demo
+
+    trial_hasta = date.today() + timedelta(days=365)
+    password_hash = hashear_password("demo1234")
+
+    demo = await create_lavadero(
+        db,
+        nombre="Demo Lavadero",
+        ciudad="Bogotá",
+        telefono="3000000000",
+        email=email,
+        password_hash=password_hash,
+        pin_dueno="9999",
+        pin_operario="1111",
+        plan="pro",
+        estado_suscripcion="activa",
+        trial_hasta=trial_hasta,
+        pais="CO",
+        moneda="COP",
+        auth_provider="local",
+        provider_id=None
+    )
+
+    # Crear adicionales y empleados por defecto usando helpers
+    await create_default_adicionales(db, demo["id"])
+    await create_default_empleados(db, demo["id"])
+
+    return demo
+
 @router.post("/login")
 async def login(datos: LoginRequest, db=Depends(get_db)):
     try:
@@ -106,7 +143,10 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
             datos.email.lower().strip()
         )
         if not lavadero:
-            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+            if datos.email.lower().strip() == 'demo@aquawash.com' and datos.password == 'demo1234':
+                lavadero = await ensure_demo_account(db)
+            else:
+                raise HTTPException(status_code=401, detail="Credenciales incorrectas")
         
         if lavadero["auth_provider"] == "google" and not lavadero["password_hash"]:
             raise HTTPException(status_code=401, detail="Esta cuenta se registró con Google. Usa el botón de Google para iniciar sesión.")
@@ -168,31 +208,24 @@ async def google_login(datos: GoogleLoginRequest, db=Depends(get_db)):
             pais = datos.pais or "CO"
             moneda = datos.moneda or "COP"
 
-            new_lavadero = await db.fetchrow(
-                """
-                INSERT INTO lavaderos (
-                    nombre, ciudad, telefono, email, password_hash,
-                    pin_dueno, pin_operario,
-                    plan, estado_suscripcion, trial_hasta,
-                    precio_moto, precio_carro, precio_furgon, precio_camion, precio_bus,
-                    pais, moneda, auth_provider, provider_id
-                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'trial',$9,10000,15000,20000,25000,30000,$10,$11,$12,$13)
-                RETURNING id, email, plan
-                """,
-                datos.nombre_lavadero.strip(), datos.ciudad, datos.telefono,
-                email.lower().strip(), pwd_hash,
-                datos.pin_dueno.strip(), datos.pin_operario.strip(),
-                "pro", trial_hasta,
-                pais, moneda, "google", provider_id
+            new_lavadero = await create_lavadero(
+                db,
+                nombre=datos.nombre_lavadero.strip(),
+                ciudad=datos.ciudad,
+                telefono=datos.telefono,
+                email=email.lower().strip(),
+                password_hash=pwd_hash,
+                pin_dueno=datos.pin_dueno.strip(),
+                pin_operario=datos.pin_operario.strip(),
+                plan="pro",
+                estado_suscripcion="trial",
+                trial_hasta=trial_hasta,
+                pais=pais,
+                moneda=moneda,
+                auth_provider="google",
+                provider_id=provider_id
             )
-            for nombre_adicional, precio in [
-                ("Aspirado",5000),("Encerado",8000),
-                ("Lavado de motor",12000),("Pulida de rines",6000),("Ambientador",3000)
-            ]:
-                await db.execute(
-                    "INSERT INTO adicionales_catalogo (lavadero_id, nombre, precio) VALUES ($1,$2,$3)",
-                    new_lavadero["id"], nombre_adicional, precio
-                )
+            await create_default_adicionales(db, new_lavadero["id"])
             token = crear_token({
                 "lavadero_id": new_lavadero["id"],
                 "email": new_lavadero["email"],
@@ -242,31 +275,24 @@ async def registro(datos: RegisterRequest, db=Depends(get_db)):
     trial_hasta = date.today() + timedelta(days=7)
     pwd_hash = hashear_password(datos.password) if datos.password else ""
     
-    lavadero = await db.fetchrow(
-        """
-        INSERT INTO lavaderos (
-            nombre, ciudad, telefono, email, password_hash,
-            pin_dueno, pin_operario,
-            plan, estado_suscripcion, trial_hasta,
-            precio_moto, precio_carro, precio_furgon, precio_camion, precio_bus,
-            pais, moneda, auth_provider, provider_id
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'trial',$9,10000,15000,20000,25000,30000,$10,$11,$12,$13)
-        RETURNING id, email, plan
-        """,
-        datos.nombre.strip(), datos.ciudad, datos.telefono,
-        datos.email.lower().strip(), pwd_hash,
-        datos.pin_dueno.strip(), datos.pin_operario.strip(),
-        datos.plan, trial_hasta,
-        datos.pais, datos.moneda, datos.auth_provider, datos.provider_id
+    lavadero = await create_lavadero(
+        db,
+        nombre=datos.nombre.strip(),
+        ciudad=datos.ciudad,
+        telefono=datos.telefono,
+        email=datos.email.lower().strip(),
+        password_hash=pwd_hash,
+        pin_dueno=datos.pin_dueno.strip(),
+        pin_operario=datos.pin_operario.strip(),
+        plan=datos.plan,
+        estado_suscripcion="trial",
+        trial_hasta=trial_hasta,
+        pais=datos.pais,
+        moneda=datos.moneda,
+        auth_provider=datos.auth_provider,
+        provider_id=datos.provider_id
     )
-    for nombre, precio in [
-        ("Aspirado",5000),("Encerado",8000),
-        ("Lavado de motor",12000),("Pulida de rines",6000),("Ambientador",3000)
-    ]:
-        await db.execute(
-            "INSERT INTO adicionales_catalogo (lavadero_id, nombre, precio) VALUES ($1,$2,$3)",
-            lavadero["id"], nombre, precio
-        )
+    await create_default_adicionales(db, lavadero["id"])
     token = crear_token({
         "lavadero_id": lavadero["id"],
         "email":       lavadero["email"],
