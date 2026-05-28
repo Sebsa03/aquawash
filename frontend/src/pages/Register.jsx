@@ -174,21 +174,28 @@ export default function Register() {
           </h2>
 
           {!needsGoogleComplete && (
-            GOOGLE_ENABLED ? (
-              <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
-                <GoogleLogin
-                  onSuccess={onGoogleSuccess}
-                  onError={() => setError('Error en el inicio con Google. Intenta otra vez.')}
-                />
-                <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-                  O regístrate con tu correo y contraseña
+            <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
+              {GOOGLE_ENABLED ? (
+                <>
+                  <GoogleLogin
+                    onSuccess={onGoogleSuccess}
+                    onError={() => setError('Error en el inicio con Google. Intenta otra vez.')}
+                  />
+                  <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
+                    O regístrate con tu correo y contraseña
+                  </div>
+                </>
+              ) : (
+                <button type="button" disabled style={{ width:'100%', padding:'0.9rem', borderRadius:8, border:'1px solid rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.04)', color:'var(--mut)', cursor:'not-allowed' }}>
+                  Google no configurado
+                </button>
+              )}
+              {!GOOGLE_ENABLED && (
+                <div style={{ background:'rgba(255,71,87,0.08)', border:'1px solid rgba(255,71,87,0.18)', borderRadius:6, padding:'10px 14px', fontSize:12, color:'var(--dan)' }}>
+                  Para activar Google, define VITE_GOOGLE_CLIENT_ID en frontend/.env
                 </div>
-              </div>
-            ) : (
-              <div style={{ marginBottom:20, textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-                Registro con Google no está disponible.
-              </div>
-            )
+              )}
+            </div>
           )}
 
           <form onSubmit={needsGoogleComplete ? handleGoogleComplete : handleSubmit}>

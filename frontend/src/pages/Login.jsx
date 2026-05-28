@@ -64,26 +64,28 @@ export default function Login() {
           Inicia sesión para continuar
         </p>
 
-        {GOOGLE_ENABLED ? (
-          <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setGoogleError('Error en el inicio con Google. Intenta otra vez.')}
-            />
-            {googleError && (
-              <div style={{ background:'rgba(255,71,87,0.1)', border:'1px solid rgba(255,71,87,0.3)', borderRadius:6, padding:'10px 14px', fontSize:12, color:'var(--dan)' }}>
-                {googleError}
+        <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
+          {GOOGLE_ENABLED ? (
+            <>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setGoogleError('Error en el inicio con Google. Intenta otra vez.')}
+              />
+              <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
+                O ingresa con correo y contraseña
               </div>
-            )}
-            <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-              O ingresa con correo y contraseña
+            </>
+          ) : (
+            <button type="button" disabled style={{ width:'100%', padding:'0.9rem', borderRadius:8, border:'1px solid rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.04)', color:'var(--mut)', cursor:'not-allowed' }}>
+              Google no configurado
+            </button>
+          )}
+          {(googleError || !GOOGLE_ENABLED) && (
+            <div style={{ background:'rgba(255,71,87,0.08)', border:'1px solid rgba(255,71,87,0.18)', borderRadius:6, padding:'10px 14px', fontSize:12, color:'var(--dan)' }}>
+              {googleError || 'Para activar Google, define VITE_GOOGLE_CLIENT_ID en frontend/.env'}
             </div>
-          </div>
-        ) : (
-          <div style={{ marginBottom:20, textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-            Inicio de sesión con Google no está disponible.
-          </div>
-        )}
+          )}
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group" style={{ marginBottom:14 }}>
