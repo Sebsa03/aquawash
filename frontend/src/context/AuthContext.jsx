@@ -27,6 +27,11 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function setAuthToken(tokenValue) {
+    localStorage.setItem('aw_token', tokenValue)
+    setToken(tokenValue)
+  }
+
   function logout() {
     localStorage.removeItem('aw_token')
     setToken(null)
@@ -34,7 +39,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, role, setRole, login, logout, loading, error }}>
+    <AuthContext.Provider value={{ isAuthenticated, role, setRole, login, setAuthToken, logout, loading, error }}>
       {children}
     </AuthContext.Provider>
   )

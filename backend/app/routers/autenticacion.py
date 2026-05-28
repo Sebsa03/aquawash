@@ -37,6 +37,13 @@ class RegisterRequest(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     credential: str
+    nombre_lavadero: Optional[str] = None
+    ciudad: Optional[str] = None
+    telefono: Optional[str] = None
+    pin_dueno: Optional[str] = None
+    pin_operario: Optional[str] = None
+    pais: Optional[str] = 'CO'
+    moneda: Optional[str] = 'COP'
 
 class ForgotRequest(BaseModel):
     email: str
@@ -153,14 +160,54 @@ async def google_login(datos: GoogleLoginRequest, db=Depends(get_db)):
                 "rol": "tenant"
             })
             return {"access_token": token, "token_type": "bearer", "status": "logged_in"}
-        else:
-            # Usuario no existe, requiere completar registro
-            return {
-                "status": "requires_registration", 
-                "email": email, 
-                "nombre": nombre, 
-                "provider_id": provider_id
-            }
+
+        if datos.nombre_lavadero and datos.pin_dueno and datos.pin_operario:
+            # Crear cuenta nueva con Google
+            trial_hasta = date.today() + timedelta(days=7)
+            pwd_hash = ""
+            pais = datos.pais or "CO"
+            moneda = datos.moneda or "COP"
+
+            new_lavadero = await db.fetchrow(
+                """
+                INSERT INTO lavaderos (
+                    nombre, ciudad, telefono, email, password_hash,
+                    pin_dueno, pin_operario,
+                    plan, estado_suscripcion, trial_hasta,
+                    precio_moto, precio_carro, precio_furgon, precio_camion, precio_bus,
+                    pais, moneda, auth_provider, provider_id
+                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'trial',$9,10000,15000,20000,25000,30000,$10,$11,$12,$13)
+                RETURNING id, email, plan
+                """,
+                datos.nombre_lavadero.strip(), datos.ciudad, datos.telefono,
+                email.lower().strip(), pwd_hash,
+                datos.pin_dueno.strip(), datos.pin_operario.strip(),
+                "pro", trial_hasta,
+                pais, moneda, "google", provider_id
+            )
+            for nombre_adicional, precio in [
+                ("Aspirado",5000),("Encerado",8000),
+                ("Lavado de motor",12000),("Pulida de rines",6000),("Ambientador",3000)
+            ]:
+                await db.execute(
+                    "INSERT INTO adicionales_catalogo (lavadero_id, nombre, precio) VALUES ($1,$2,$3)",
+                    new_lavadero["id"], nombre_adicional, precio
+                )
+            token = crear_token({
+                "lavadero_id": new_lavadero["id"],
+                "email": new_lavadero["email"],
+                "plan": new_lavadero["plan"],
+                "rol": "tenant"
+            })
+            return {"access_token": token, "token_type": "bearer", "status": "registered"}
+
+        return {
+            "status": "requires_registration", 
+            "needs_more_data": True,
+            "email": email, 
+            "nombre": nombre, 
+            "provider_id": provider_id
+        }
             
     except ValueError:
         raise HTTPException(status_code=401, detail="Token de Google inválido")

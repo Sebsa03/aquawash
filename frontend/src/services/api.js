@@ -31,6 +31,16 @@ async function request(method, path, body = null) {
 // AUTH
 export const login = (email, password) =>
   request('POST', '/auth/login', { email, password })
+export const googleLogin = (credential, payload = {}) =>
+  request('POST', '/auth/google', { credential, ...payload })
+export const forgotPassword = (email) =>
+  request('POST', '/auth/forgot-password', { email })
+export const forgotPins = (email) =>
+  request('POST', '/auth/forgot-pins', { email })
+export const resetPassword = ({ token, new_password }) =>
+  request('POST', '/auth/reset-password', { token, new_password })
+export const resetPins = ({ token, new_pin_dueno, new_pin_operario }) =>
+  request('POST', '/auth/reset-pins', { token, new_pin_dueno, new_pin_operario })
 export const verifyPinReq = (pin) => request('POST', '/auth/verify-pin', { pin })
 
 // LAVADOS

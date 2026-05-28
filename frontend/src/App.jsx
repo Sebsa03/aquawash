@@ -1,10 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
-import Landing    from './pages/Landing'
-import Login      from './pages/Login'
-import Register   from './pages/Register'
-import Demo       from './pages/Demo'
+import Landing         from './pages/Landing'
+import Login           from './pages/Login'
+import Register        from './pages/Register'
+import Demo            from './pages/Demo'
+import ForgotPassword  from './pages/ForgotPassword'
+import ForgotPins      from './pages/ForgotPins'
+import ResetPassword   from './pages/ResetPassword'
+import ResetPins       from './pages/ResetPins'
 
 import AppLayout    from './components/AppLayout'
 import Dashboard    from './pages/app/Dashboard'
@@ -31,6 +35,10 @@ export default function App() {
           <Route path="/"         element={<Landing />} />
           <Route path="/login"    element={<Login />} />
           <Route path="/registro" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/forgot-pins" element={<ForgotPins />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/reset-pins/:token" element={<ResetPins />} />
           <Route path="/demo"     element={<Demo />} />
           
           <Route path="/app" element={
