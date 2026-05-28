@@ -1,0 +1,45 @@
+{
+  "report_date": "2026-05-28",
+  "patterns": {
+    "localStorage.getItem('aw_token')": [
+      {"file":"frontend/src/components/AppLayout.jsx","line":22},
+      {"file":"frontend/src/pages/app/Nuevo.jsx","line":32},
+      {"file":"frontend/src/context/AuthContext.jsx","line":7},
+      {"file":"frontend/dist/assets/index-CdvBRIFZ.js","line":11}
+    ],
+    "localStorage.setItem('aw_token') / removeItem": [
+      {"file":"frontend/src/context/AuthContext.jsx","line":19},
+      {"file":"frontend/src/context/AuthContext.jsx","line":31},
+      {"file":"frontend/src/services/api.js","line":22},
+      {"file":"frontend/dist/assets/index-CdvBRIFZ.js","line":11}
+    ],
+    "API request wrapper (request / fetch)": [
+      {"file":"frontend/src/services/api.js","line":1},
+      {"file":"frontend/src/services/api.js","line":5},
+      {"file":"frontend/dist/assets/index-CdvBRIFZ.js","line":11}
+    ],
+    "Google Login usage / feature-flag": [
+      {"file":"frontend/.env.example","line":3},
+      {"file":"frontend/.env.local","line":2},
+      {"file":"frontend/src/main.jsx","line":7},
+      {"file":"frontend/src/pages/Register.jsx","line":3},
+      {"file":"frontend/src/pages/Register.jsx","line":180},
+      {"file":"frontend/src/pages/Login.jsx","line":3},
+      {"file":"frontend/src/pages/Login.jsx","line":70}
+    ],
+    "Google-not-configured message": [
+      {"file":"frontend/src/pages/Register.jsx","line":195},
+      {"file":"frontend/src/pages/Login.jsx","line":85}
+    ],
+    "VITE_GOOGLE_CLIENT_ID usage": [
+      {"file":"frontend/.env.local","line":2},
+      {"file":"frontend/src/main.jsx","line":7},
+      {"file":"frontend/src/pages/Register.jsx","line":7},
+      {"file":"frontend/src/pages/Login.jsx","line":7}
+    ],
+    "duplicated UI/error strings in built bundle (dist)": [
+      {"file":"frontend/dist/assets/index-CdvBRIFZ.js","line":11}
+    ]
+  },
+  "notes": "Reporte heurístico limitado a `frontend/src`, `.env` y el bundle en `frontend/dist`. Observadas repeticiones importantes: manejo del token `aw_token` en varios componentes (leer/guardar/remover), única implementación de la función `request` en `services/api.js` utilizada por toda la app, y duplicación de mensajes sobre Google no configurado en los formularios. Recomendado: crear un componente `AuthButton/GoogleAuth` reutilizable, centralizar el manejo del token en `AuthContext` (ya existe) y evitar strings duplicadas extrayéndolas a constantes en `src/constants.js`."
+}

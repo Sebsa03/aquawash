@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { GoogleLogin } from '@react-oauth/google'
+import GoogleAuth from '../components/GoogleAuth'
 import { useAuth } from '../context/AuthContext'
 import { googleLogin } from '../services/api'
 
@@ -65,21 +65,11 @@ export default function Login() {
         </p>
 
         <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
-          {GOOGLE_ENABLED ? (
-            <>
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setGoogleError('Error en el inicio con Google. Intenta otra vez.')}
-              />
-              <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13 }}>
-                O ingresa con correo y contraseña
-              </div>
-            </>
-          ) : (
-            <button type="button" disabled style={{ width:'100%', padding:'0.9rem', borderRadius:8, border:'1px solid rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.04)', color:'var(--mut)', cursor:'not-allowed' }}>
-              Google no configurado
-            </button>
-          )}
+          <GoogleAuth
+            onSuccess={handleGoogleSuccess}
+            onError={() => setGoogleError('Error en el inicio con Google. Intenta otra vez.')}
+            helperText={'O ingresa con correo y contraseña'}
+          />
           {(googleError || !GOOGLE_ENABLED) && (
             <div style={{ background:'rgba(255,71,87,0.08)', border:'1px solid rgba(255,71,87,0.18)', borderRadius:6, padding:'10px 14px', fontSize:12, color:'var(--dan)' }}>
               {googleError || 'Para activar Google, define VITE_GOOGLE_CLIENT_ID en frontend/.env'}
