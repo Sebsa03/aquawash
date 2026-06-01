@@ -175,6 +175,11 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
 @router.post("/auth/google")
 async def google_login(datos: GoogleLoginRequest, db=Depends(get_db)):
     client_id = os.getenv("GOOGLE_CLIENT_ID")
+    if not client_id:
+        raise HTTPException(
+            status_code=500,
+            detail="GOOGLE_CLIENT_ID no configurado en el servidor. Define la variable de entorno GOOGLE_CLIENT_ID."
+        )
     try:
         idinfo = id_token.verify_oauth2_token(datos.credential, google_requests.Request(), client_id)
         email = idinfo['email']

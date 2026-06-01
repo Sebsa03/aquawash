@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000')
+if (!import.meta.env.VITE_API_URL && typeof window !== 'undefined') {
+  console.warn('VITE_API_URL no configurado. Usando window.location.origin como fallback:', BASE)
+}
 
 const getToken = () => localStorage.getItem('aw_token')
 
