@@ -86,10 +86,14 @@ def send_recovery_email(to_email: str, subject: str, link: str):
     try:
         sg = SendGridAPIClient(sg_key)
         response = sg.send(message)
-        print(f"Correo enviado a {to_email} (Status: {response.status_code})")
+        logger.info(f"Correo enviado a {to_email} (Status: {response.status_code})")
+        if response.status_code and response.status_code >= 400:
+            logger.warning(f"SendGrid devolvió status {response.status_code} para {to_email}")
+            return False
+        return True
     except Exception as e:
-        print(f"❌ Error al enviar correo SendGrid: {e}")
-        raise HTTPException(status_code=500, detail="Error al enviar el correo de recuperación")
+        logger.error(f"❌ Error al enviar correo SendGrid a {to_email}: {e}", exc_info=True)
+        return False
 
 async def ensure_demo_account(db):
     email = "demo@aquawash.com"
