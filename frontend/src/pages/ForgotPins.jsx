@@ -1,22 +1,55 @@
 import { useState } from 'react'
-import { forgotPins } from '../services/api'
+import { forgotPins, resetPins } from '../services/api'
 import AuthCard from '../components/AuthCard'
 import Feedback from '../components/Feedback'
 
 export default function ForgotPins() {
   const [email, setEmail] = useState('')
+  const [codigo, setCodigo] = useState('')
+  const [pinDueno, setPinDueno] = useState('')
+  const [pinOperario, setPinOperario] = useState('')
+  const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
   const [error, setError] = useState(null)
 
-  async function handleSubmit(e) {
+  async function handleSendEmail(e) {
     e.preventDefault()
     setError(null)
     setMessage(null)
     setLoading(true)
     try {
       await forgotPins(email)
-      setMessage('Se envió el enlace para recuperar tus PINs. Revisa tu correo.')
+      setSent(true)
+      setMessage('Se envió el código de verificación a tu correo. Ingresa el código y define nuevos PINs.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResetPins(e) {
+    e.preventDefault()
+    setError(null)
+    setMessage(null)
+
+    if (codigo.length !== 6) {
+      return setError('Ingresa el código de verificación de 6 dígitos.')
+    }
+    if (pinDueno.length !== 4 || pinOperario.length !== 4) {
+      return setError('Los PINs deben ser de exactamente 4 dígitos.')
+    }
+
+    setLoading(true)
+    try {
+      await resetPins({ token: codigo, new_pin_dueno: pinDueno, new_pin_operario: pinOperario })
+      setMessage('Tus PINs se actualizaron correctamente. Ahora puedes iniciar sesión con los nuevos códigos.')
+      setError(null)
+      setCodigo('')
+      setPinDueno('')
+      setPinOperario('')
+      setSent(false)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -25,17 +58,75 @@ export default function ForgotPins() {
   }
 
   return (
-    <AuthCard title="Recuperar PINs" description="Ingresa tu correo y te enviaremos el enlace para restablecer tus PINs.">
-      <form onSubmit={handleSubmit}>
-        <div className="form-group" style={{ marginBottom:18 }}>
-          <label className="form-label">Correo electronico</label>
-          <input className="input-base" type="email" placeholder="tu@correo.com" value={email} onChange={e => setEmail(e.target.value)} required />
-        </div>
+    <AuthCard
+      title="Recuperar PINs"
+      description={sent
+        ? 'Ya enviamos el código. Ingresa el código y los nuevos PINs.'
+        : 'Ingresa tu correo y te enviaremos el código para restablecer tus PINs.'}
+    >
+      <form onSubmit={sent ? handleResetPins : handleSendEmail}>
+        {!sent && (
+          <div className="form-group" style={{ marginBottom:18 }}>
+            <label className="form-label">Correo electronico</label>
+            <input
+              className="input-base"
+              type="email"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+        )}
+
+        {sent && (
+          <div className="form-group" style={{ marginBottom:18 }}>
+            <label className="form-label">Código de verificación</label>
+            <input
+              className="input-base"
+              type="text"
+              placeholder="123456"
+              maxLength="6"
+              value={codigo}
+              onChange={e => setCodigo(e.target.value.replace(/[^0-9]/g, ''))}
+              required
+            />
+          </div>
+        )}
+
+        {sent && (
+          <div className="form-grid" style={{ marginBottom:18 }}>
+            <div className="form-group">
+              <label className="form-label">Nuevo PIN Dueño</label>
+              <input
+                className="input-base"
+                type="text"
+                placeholder="9999"
+                maxLength="4"
+                value={pinDueno}
+                onChange={e => setPinDueno(e.target.value.replace(/[^0-9]/g, ''))}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Nuevo PIN Operario</label>
+              <input
+                className="input-base"
+                type="text"
+                placeholder="1111"
+                maxLength="4"
+                value={pinOperario}
+                onChange={e => setPinOperario(e.target.value.replace(/[^0-9]/g, ''))}
+                required
+              />
+            </div>
+          </div>
+        )}
 
         <Feedback error={error} message={message} />
 
         <button className="btn-primary" type="submit" disabled={loading} style={{ width:'100%', padding:'0.9rem' }}>
-          {loading ? 'Enviando...' : 'Enviar enlace'}
+          {loading ? 'Procesando...' : sent ? 'Restablecer PINs' : 'Enviar código'}
         </button>
       </form>
     </AuthCard>
