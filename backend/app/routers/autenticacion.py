@@ -112,7 +112,7 @@ async def ensure_demo_account(db):
         pin_dueno="9999",
         pin_operario="1111",
         plan="pro",
-        estado_suscripcion="activa",
+        estado_suscripcion="activo",
         trial_hasta=trial_hasta,
         pais="CO",
         moneda="COP",
