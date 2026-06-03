@@ -114,8 +114,9 @@ export default function ForgotPassword() {
               className="input-base"
               type="text"
               placeholder="123456"
+              maxLength="6"
               value={codigo}
-              onChange={e => setCodigo(e.target.value.trim())}
+              onChange={e => setCodigo(e.target.value.replace(/[^0-9]/g, ''))}
               required
             />
           </div>

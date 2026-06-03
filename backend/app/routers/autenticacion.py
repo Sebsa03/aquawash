@@ -324,8 +324,8 @@ async def forgot_password(datos: ForgotRequest, db=Depends(get_db)):
     try:
         await ensure_recovery_columns(db)
 
-        token = str(uuid.uuid4())
-        expires = datetime.now() + timedelta(hours=1)
+        token = f"{secrets.randbelow(10**6):06d}"
+        expires = datetime.now() + timedelta(minutes=10)
         
         await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
         
