@@ -3,6 +3,7 @@ from app.database import get_db
 from typing import Optional
 from datetime import date, timedelta, datetime
 from pydantic import BaseModel
+from app.logger import logger
 from app.routers.auth import verificar_password, crear_token, hashear_password, get_lavadero_actual
 from app.utils.bootstrap import create_lavadero, create_default_adicionales, create_default_empleados
 from app.config import settings
@@ -300,6 +301,15 @@ async def registro(datos: RegisterRequest, db=Depends(get_db)):
     })
     return {"access_token": token, "token_type": "bearer", "mensaje": "Cuenta creada"}
 
+async def ensure_recovery_columns(db):
+    """Garantiza que la tabla lavaderos tenga columnas para reset_token y reset_token_expires."""
+    try:
+        await db.execute("ALTER TABLE lavaderos ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);")
+        await db.execute("ALTER TABLE lavaderos ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;")
+    except Exception as e:
+        logger.warning(f"No se pudieron asegurar las columnas de recuperación: {e}", exc_info=True)
+        raise
+
 @router.post("/forgot-password")
 async def forgot_password(datos: ForgotRequest, db=Depends(get_db)):
     email = datos.email.lower().strip()
@@ -311,17 +321,22 @@ async def forgot_password(datos: ForgotRequest, db=Depends(get_db)):
     if lavadero["auth_provider"] == "google":
         raise HTTPException(status_code=400, detail="Esta cuenta usa Google. No tiene contraseña.")
 
-    token = str(uuid.uuid4())
-    expires = datetime.now() + timedelta(hours=1)
-    
-    await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
-    
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    reset_link = f"{frontend_url.rstrip('/')}/reset-password/{token}"
-    
-    send_recovery_email(email, "Recupera tu contraseña en AquaWash", reset_link)
-    
-    return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
+    try:
+        await ensure_recovery_columns(db)
+
+        token = str(uuid.uuid4())
+        expires = datetime.now() + timedelta(hours=1)
+        
+        await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
+        
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        reset_link = f"{frontend_url.rstrip('/')}/reset-password/{token}"
+        
+        send_recovery_email(email, "Recupera tu contraseña en AquaWash", reset_link)
+        return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
+    except Exception as e:
+        logger.error(f"Error en forgot-password para {email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error interno al procesar la solicitud.")
 
 @router.post("/forgot-pins")
 async def forgot_pins(datos: ForgotRequest, db=Depends(get_db)):
@@ -331,17 +346,22 @@ async def forgot_pins(datos: ForgotRequest, db=Depends(get_db)):
     if not lavadero:
         return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
 
-    token = str(uuid.uuid4())
-    expires = datetime.now() + timedelta(hours=1)
-    
-    await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
-    
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    reset_link = f"{frontend_url.rstrip('/')}/reset-pins/{token}"
-    
-    send_recovery_email(email, "Recupera tus PINs en AquaWash", reset_link)
-    
-    return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
+    try:
+        await ensure_recovery_columns(db)
+
+        token = str(uuid.uuid4())
+        expires = datetime.now() + timedelta(hours=1)
+        
+        await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
+        
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        reset_link = f"{frontend_url.rstrip('/')}/reset-pins/{token}"
+        
+        send_recovery_email(email, "Recupera tus PINs en AquaWash", reset_link)
+        return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
+    except Exception as e:
+        logger.error(f"Error en forgot-pins para {email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error interno al procesar la solicitud.")
 
 @router.post("/reset-password")
 async def reset_password(datos: ResetPasswordRequest, db=Depends(get_db)):
