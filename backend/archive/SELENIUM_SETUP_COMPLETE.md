@@ -84,9 +84,9 @@ Menú con opciones para:
 ✓ Generar reportes HTML
 ```
 
-**Script de Verificación (verify_selenium.py)**
+**Script de Verificación (archive/verify_selenium.py)**
 ```
-python verify_selenium.py
+python archive/verify_selenium.py
 
 Comprueba:
 ✓ Instalación de dependencias

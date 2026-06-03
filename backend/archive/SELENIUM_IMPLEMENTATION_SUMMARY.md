@@ -200,7 +200,7 @@ def test_page_load_time(driver, base_url):
 
 ```bash
 # Verificar que todo está configurado correctamente
-python verify_selenium.py
+python archive/verify_selenium.py
 
 # Debería mostrar:
 ✓ Selenium 4.44.0

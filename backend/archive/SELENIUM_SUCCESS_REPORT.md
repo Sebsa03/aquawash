@@ -52,7 +52,7 @@ backend/
 ├── requirements.txt                           (actualizado)
 ├── pytest.ini                                 (nuevo)
 ├── .env                                       (actualizado)
-├── verify_selenium.py                         (nuevo)
+├── archive/verify_selenium.py                         (nuevo)
 ├── SELENIUM_QUICKSTART.md                     (nuevo)
 ├── SELENIUM_IMPLEMENTATION_SUMMARY.md         (nuevo)
 ├── SELENIUM_SETUP_COMPLETE.md                 (nuevo)
@@ -151,7 +151,7 @@ pytest tests/e2e/ --html=report.html --self-contained-html -v
 pytest tests/e2e/ -vv -s
 
 # Verificar configuración
-python verify_selenium.py
+python archive/verify_selenium.py
 ```
 
 ---

@@ -6,7 +6,7 @@ const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 export default function GoogleAuth({ onSuccess, onError, helperText }){
   if (GOOGLE_ENABLED) {
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
         <GoogleLogin onSuccess={onSuccess} onError={onError} />
         <div style={{ textAlign:'center', color:'var(--mut)', fontSize:13, marginTop:8 }}>{helperText}</div>
       </div>

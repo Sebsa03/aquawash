@@ -140,7 +140,7 @@ def main():
             
             elif choice == "12":
                 print(f"\n{Colors.CYAN}▶ Verificando configuración{Colors.END}\n")
-                subprocess.run(["python", "verify_selenium.py"])
+                subprocess.run(["python", "archive/verify_selenium.py"])
             
             elif choice == "13":
                 print(f"\n{Colors.CYAN}▶ Últimos logs{Colors.END}\n")
