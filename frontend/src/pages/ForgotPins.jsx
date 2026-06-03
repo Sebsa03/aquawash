@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { forgotPins, resetPins } from '../services/api'
+import { forgotPins, resetPins, verifyResetCode } from '../services/api'
 import AuthCard from '../components/AuthCard'
 import Feedback from '../components/Feedback'
 
@@ -30,7 +30,7 @@ export default function ForgotPins() {
     }
   }
 
-  function handleConfirmCode(e) {
+  async function handleConfirmCode(e) {
     e.preventDefault()
     setError(null)
     setMessage(null)
@@ -39,8 +39,16 @@ export default function ForgotPins() {
       return setError('Ingresa el código de verificación de 6 dígitos.')
     }
 
-    setCodeConfirmed(true)
-    setMessage('Código correcto. Ahora ingresa los nuevos PINs.')
+    setLoading(true)
+    try {
+      await verifyResetCode(codigo)
+      setCodeConfirmed(true)
+      setMessage('Código correcto. Ahora ingresa los nuevos PINs.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleResetPins(e) {

@@ -51,6 +51,9 @@ class GoogleLoginRequest(BaseModel):
 class ForgotRequest(BaseModel):
     email: str
 
+class VerifyResetCodeRequest(BaseModel):
+    token: str
+
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
@@ -372,6 +375,16 @@ async def forgot_pins(datos: ForgotRequest, db=Depends(get_db)):
     except Exception as e:
         logger.error(f"Error en forgot-pins para {email}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno al procesar la solicitud.")
+
+@router.post("/verify-reset-code")
+async def verify_reset_code(datos: VerifyResetCodeRequest, db=Depends(get_db)):
+    lavadero = await db.fetchrow(
+        "SELECT id FROM lavaderos WHERE reset_token = $1 AND reset_token_expires > NOW()",
+        datos.token
+    )
+    if not lavadero:
+        raise HTTPException(status_code=400, detail="Código de verificación inválido o expirado.")
+    return {"mensaje": "Código válido."}
 
 @router.post("/reset-password")
 async def reset_password(datos: ResetPasswordRequest, db=Depends(get_db)):

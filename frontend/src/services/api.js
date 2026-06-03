@@ -42,6 +42,8 @@ export const forgotPassword = (email) =>
   request('POST', '/auth/forgot-password', { email })
 export const forgotPins = (email) =>
   request('POST', '/auth/forgot-pins', { email })
+export const verifyResetCode = (token) =>
+  request('POST', '/auth/verify-reset-code', { token })
 export const resetPassword = ({ token, new_password }) =>
   request('POST', '/auth/reset-password', { token, new_password })
 export const resetPins = ({ token, new_pin_dueno, new_pin_operario }) =>
