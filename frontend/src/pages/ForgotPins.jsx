@@ -104,7 +104,7 @@ export default function ForgotPins() {
           </div>
         )}
 
-        {sent && (
+        {sent && !codeConfirmed && (
           <div className="form-group" style={{ marginBottom:18 }}>
             <label className="form-label">Código de verificación</label>
             <input

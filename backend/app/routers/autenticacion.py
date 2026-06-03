@@ -333,7 +333,9 @@ async def forgot_password(datos: ForgotRequest, db=Depends(get_db)):
         reset_link = f"{frontend_url.rstrip('/')}/reset-password/{token}"
         html_content = f"""
         <h2>Recupera tu contraseña en AquaWash</h2>
-        <p>Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+        <p>Usa el siguiente código para vérificar tu identidad y restablecer tu contraseña:</p>
+        <p><strong>Código:</strong> <span style=\"font-size:1.4rem;letter-spacing:0.2rem;color:#0b5ed7;\">{token}</span></p>
+        <p>También puedes usar este enlace para continuar directamente:</p>
         <a href=\"{reset_link}\" style=\"display:inline-block;padding:10px 20px;color:white;background-color:#0ea5e9;text-decoration:none;border-radius:5px;\">Restablecer contraseña</a>
         <p>Si no solicitaste esto, ignora este correo.</p>
         """
