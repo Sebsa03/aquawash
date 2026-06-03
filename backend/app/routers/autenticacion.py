@@ -172,7 +172,7 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
         print(f"ERROR LOGIN: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/auth/google")
+@router.post("/google")
 async def google_login(datos: GoogleLoginRequest, db=Depends(get_db)):
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     try:
