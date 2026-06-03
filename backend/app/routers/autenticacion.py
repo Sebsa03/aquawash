@@ -9,6 +9,7 @@ from app.utils.bootstrap import create_lavadero, create_default_adicionales, cre
 from app.config import settings
 import uuid
 import os
+import secrets
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from google.oauth2 import id_token
@@ -59,23 +60,15 @@ class ResetPinsRequest(BaseModel):
     new_pin_dueno: str
     new_pin_operario: str
 
-def send_recovery_email(to_email: str, subject: str, link: str):
+def send_recovery_email(to_email: str, subject: str, html_content: str):
     sg_key = os.getenv("SENDGRID_API_KEY")
     from_email = os.getenv("SENDGRID_FROM_EMAIL", "no-reply@aquawash.com")
     
     if not sg_key:
-        print("⚠️ Advertencia: SENDGRID_API_KEY no configurado. No se enviará correo.")
-        print(f"URL de recuperación para {to_email}: {link}")
-        return
+        logger.warning("SENDGRID_API_KEY no configurado. No se enviará correo.")
+        logger.info(f"URL de recuperación para {to_email}: [no disponible sin SendGrid]")
+        return False
 
-    html_content = f"""
-    <h2>Recuperación de Credenciales de AquaWash</h2>
-    <p>Has solicitado restablecer tus credenciales.</p>
-    <p>Haz clic en el siguiente enlace para continuar:</p>
-    <a href="{link}" style="display:inline-block;padding:10px 20px;color:white;background-color:#0ea5e9;text-decoration:none;border-radius:5px;">Restablecer mis datos</a>
-    <p>Si no fuiste tú, puedes ignorar este correo de forma segura.</p>
-    """
-    
     message = Mail(
         from_email=from_email,
         to_emails=to_email,
@@ -335,8 +328,13 @@ async def forgot_password(datos: ForgotRequest, db=Depends(get_db)):
         
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
         reset_link = f"{frontend_url.rstrip('/')}/reset-password/{token}"
-        
-        send_recovery_email(email, "Recupera tu contraseña en AquaWash", reset_link)
+        html_content = f"""
+        <h2>Recupera tu contraseña en AquaWash</h2>
+        <p>Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+        <a href=\"{reset_link}\" style=\"display:inline-block;padding:10px 20px;color:white;background-color:#0ea5e9;text-decoration:none;border-radius:5px;\">Restablecer contraseña</a>
+        <p>Si no solicitaste esto, ignora este correo.</p>
+        """
+        send_recovery_email(email, "Recupera tu contraseña en AquaWash", html_content)
         return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
     except Exception as e:
         logger.error(f"Error en forgot-password para {email}: {e}", exc_info=True)
@@ -353,15 +351,23 @@ async def forgot_pins(datos: ForgotRequest, db=Depends(get_db)):
     try:
         await ensure_recovery_columns(db)
 
-        token = str(uuid.uuid4())
-        expires = datetime.now() + timedelta(hours=1)
+        token = f"{secrets.randbelow(10**6):06d}"
+        expires = datetime.now() + timedelta(minutes=10)
         
         await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
         
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
         reset_link = f"{frontend_url.rstrip('/')}/reset-pins/{token}"
-        
-        send_recovery_email(email, "Recupera tus PINs en AquaWash", reset_link)
+        html_content = f"""
+        <h2>Recupera tus PINs en AquaWash</h2>
+        <p>Hemos generado un código de verificación para restablecer tus PINs.</p>
+        <p><strong>Código:</strong> <span style=\"font-size:1.4rem;letter-spacing:0.2rem;color:#0b5ed7;\">{token}</span></p>
+        <p>Este código expira en 10 minutos.</p>
+        <p>También puedes hacer clic en el siguiente enlace para continuar:</p>
+        <a href=\"{reset_link}\" style=\"display:inline-block;padding:10px 20px;color:white;background-color:#0ea5e9;text-decoration:none;border-radius:5px;\">Restablecer mis PINs</a>
+        <p>Si no solicitaste esto, ignora este correo.</p>
+        """
+        send_recovery_email(email, "Código de verificación para tus PINs en AquaWash", html_content)
         return {"mensaje": "Si el correo existe, se enviarán las instrucciones."}
     except Exception as e:
         logger.error(f"Error en forgot-pins para {email}: {e}", exc_info=True)

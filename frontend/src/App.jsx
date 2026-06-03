@@ -38,6 +38,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/forgot-pins" element={<ForgotPins />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/reset-pins" element={<ResetPins />} />
           <Route path="/reset-pins/:token" element={<ResetPins />} />
           <Route path="/demo"     element={<Demo />} />
           

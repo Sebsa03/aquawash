@@ -5,19 +5,31 @@ import AuthCard from '../components/AuthCard'
 import Feedback from '../components/Feedback'
 
 export default function ResetPins() {
-  const { token } = useParams()
+  const { token: tokenFromUrl } = useParams()
   const navigate = useNavigate()
+  const [token, setToken] = useState(tokenFromUrl || '')
   const [pinDueno, setPinDueno] = useState('')
   const [pinOperario, setPinOperario] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
   const [error, setError] = useState(null)
 
+  const isManualCode = !tokenFromUrl
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
     setMessage(null)
-    if (pinDueno.length !== 4 || pinOperario.length !== 4) return setError('Los PINs deben ser de exactamente 4 dígitos')
+
+    if (isManualCode && token.length !== 6) {
+      return setError('Ingresa el código de verificación de 6 dígitos enviado por correo.')
+    }
+    if (!isManualCode && !token) {
+      return setError('Token inválido. Usa el enlace que recibiste por correo o ingresa el código manualmente.')
+    }
+    if (pinDueno.length !== 4 || pinOperario.length !== 4) {
+      return setError('Los PINs deben ser de exactamente 4 dígitos')
+    }
 
     setLoading(true)
     try {
@@ -32,16 +44,36 @@ export default function ResetPins() {
   }
 
   return (
-    <AuthCard title="Restablecer PINs" description="Ingresa nuevos PINs para el dueño y el operario.">
+    <AuthCard
+      title="Restablecer PINs"
+      description={isManualCode
+        ? "Ingresa el código de verificación enviado por correo y define nuevos PINs."
+        : "Usa el enlace recibido por correo para restablecer tus PINs."}
+    >
       <form onSubmit={handleSubmit}>
+        {isManualCode && (
+          <div className="form-group" style={{ marginBottom:18 }}>
+            <label className="form-label">Código de verificación</label>
+            <input
+              className="input-base"
+              type="text"
+              placeholder="123456"
+              maxLength="6"
+              value={token}
+              onChange={e => setToken(e.target.value.replace(/[^0-9]/g, ''))}
+              required
+            />
+          </div>
+        )}
+
         <div className="form-grid" style={{ marginBottom:18 }}>
           <div className="form-group">
             <label className="form-label">Nuevo PIN Dueño</label>
-            <input className="input-base" type="text" placeholder="9999" maxLength="4" value={pinDueno} onChange={e => setPinDueno(e.target.value)} required />
+            <input className="input-base" type="text" placeholder="9999" maxLength="4" value={pinDueno} onChange={e => setPinDueno(e.target.value.replace(/[^0-9]/g, ''))} required />
           </div>
           <div className="form-group">
             <label className="form-label">Nuevo PIN Operario</label>
-            <input className="input-base" type="text" placeholder="1111" maxLength="4" value={pinOperario} onChange={e => setPinOperario(e.target.value)} required />
+            <input className="input-base" type="text" placeholder="1111" maxLength="4" value={pinOperario} onChange={e => setPinOperario(e.target.value.replace(/[^0-9]/g, ''))} required />
           </div>
         </div>
 
