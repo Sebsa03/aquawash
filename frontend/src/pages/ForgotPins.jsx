@@ -9,6 +9,7 @@ export default function ForgotPins() {
   const [pinDueno, setPinDueno] = useState('')
   const [pinOperario, setPinOperario] = useState('')
   const [sent, setSent] = useState(false)
+  const [codeConfirmed, setCodeConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
   const [error, setError] = useState(null)
@@ -21,7 +22,7 @@ export default function ForgotPins() {
     try {
       await forgotPins(email)
       setSent(true)
-      setMessage('Se envió el código de verificación a tu correo. Ingresa el código y define nuevos PINs.')
+      setMessage('Se envió el código de verificación a tu correo. Ingresa el código para continuar.')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -29,13 +30,26 @@ export default function ForgotPins() {
     }
   }
 
-  async function handleResetPins(e) {
+  function handleConfirmCode(e) {
     e.preventDefault()
     setError(null)
     setMessage(null)
 
     if (codigo.length !== 6) {
       return setError('Ingresa el código de verificación de 6 dígitos.')
+    }
+
+    setCodeConfirmed(true)
+    setMessage('Código correcto. Ahora ingresa los nuevos PINs.')
+  }
+
+  async function handleResetPins(e) {
+    e.preventDefault()
+    setError(null)
+    setMessage(null)
+
+    if (!codeConfirmed) {
+      return setError('Primero debes confirmar el código de verificación.')
     }
     if (pinDueno.length !== 4 || pinOperario.length !== 4) {
       return setError('Los PINs deben ser de exactamente 4 dígitos.')
@@ -50,6 +64,7 @@ export default function ForgotPins() {
       setPinDueno('')
       setPinOperario('')
       setSent(false)
+      setCodeConfirmed(false)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -60,11 +75,13 @@ export default function ForgotPins() {
   return (
     <AuthCard
       title="Recuperar PINs"
-      description={sent
-        ? 'Ya enviamos el código. Ingresa el código y los nuevos PINs.'
-        : 'Ingresa tu correo y te enviaremos el código para restablecer tus PINs.'}
+      description={!sent
+        ? 'Ingresa tu correo y te enviaremos el código para restablecer tus PINs.'
+        : !codeConfirmed
+          ? 'Revisa tu correo, escribe el código y luego define tus nuevos PINs.'
+          : 'Ingresa tus nuevos PINs para completar el cambio.'}
     >
-      <form onSubmit={sent ? handleResetPins : handleSendEmail}>
+      <form onSubmit={sent ? (codeConfirmed ? handleResetPins : handleConfirmCode) : handleSendEmail}>
         {!sent && (
           <div className="form-group" style={{ marginBottom:18 }}>
             <label className="form-label">Correo electronico</label>
@@ -94,7 +111,7 @@ export default function ForgotPins() {
           </div>
         )}
 
-        {sent && (
+        {sent && codeConfirmed && (
           <div className="form-grid" style={{ marginBottom:18 }}>
             <div className="form-group">
               <label className="form-label">Nuevo PIN Dueño</label>
@@ -126,7 +143,7 @@ export default function ForgotPins() {
         <Feedback error={error} message={message} />
 
         <button className="btn-primary" type="submit" disabled={loading} style={{ width:'100%', padding:'0.9rem' }}>
-          {loading ? 'Procesando...' : sent ? 'Restablecer PINs' : 'Enviar código'}
+          {loading ? 'Procesando...' : !sent ? 'Enviar código' : !codeConfirmed ? 'Confirmar código' : 'Restablecer PINs'}
         </button>
       </form>
     </AuthCard>
