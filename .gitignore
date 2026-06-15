@@ -19,3 +19,7 @@ Thumbs.db
 # Build
 build/
 dist/
+
+# Scripts de desarrollo local — NO subir al repositorio
+# Contienen credenciales de entorno y scripts ad-hoc de prueba
+backend/archive/
