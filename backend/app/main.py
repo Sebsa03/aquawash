@@ -5,7 +5,7 @@ from app.database import conectar, desconectar
 from app.routers import autenticacion, lavados, empleados, adicionales, estadisticas, config, caja, inventario, superadmin
 from app.logger import logger
 from app.config import settings
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -14,7 +14,16 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title=settings.app_name, version="1.0.0")
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Demasiadas solicitudes. Por favor, intenta más tarde."},
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
