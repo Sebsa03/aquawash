@@ -5,25 +5,34 @@ from app.database import conectar, desconectar
 from app.routers import autenticacion, lavados, empleados, adicionales, estadisticas, config, caja, inventario, superadmin
 from app.logger import logger
 from app.config import settings
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title=settings.app_name, version="1.0.0")
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "https://aquawash.pages.dev", "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["https://aquawash.pages.dev", "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Global Exception Handler (Desactivado para debugear)
-# @app.exception_handler(Exception)
-# async def global_exception_handler(request: Request, exc: Exception):
-#     logger.error(f"Error global inesperado: {exc}", exc_info=True)
-#     return JSONResponse(
-#         status_code=500,
-#         content={"detail": "Ha ocurrido un error interno en el servidor."},
-#     )
+# Global Exception Handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Error global inesperado: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Ha ocurrido un error interno en el servidor."},
+    )
 
 @app.on_event("startup")
 async def startup():

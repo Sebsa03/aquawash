@@ -14,8 +14,19 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from typing import Dict, Tuple
 
 router = APIRouter()
+
+_failed_logins: Dict[str, Tuple[int, datetime]] = {}
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_MINUTES = 15
+
+def _record_failed_login(email: str):
+    now = datetime.now()
+    attempts, _ = _failed_logins.get(email, (0, now))
+    _failed_logins[email] = (attempts + 1, now + timedelta(minutes=LOCKOUT_MINUTES))
+
 
 class LoginRequest(BaseModel):
     email: str
@@ -110,8 +121,8 @@ async def ensure_demo_account(db):
         telefono="3000000000",
         email=email,
         password_hash=password_hash,
-        pin_dueno="9999",
-        pin_operario="1111",
+        pin_dueno=hashear_password("9999"),
+        pin_operario=hashear_password("1111"),
         plan="pro",
         estado_suscripcion="activo",
         trial_hasta=trial_hasta,
@@ -129,8 +140,26 @@ async def ensure_demo_account(db):
 
 @router.post("/login")
 async def login(datos: LoginRequest, db=Depends(get_db)):
+    email_key = datos.email.lower().strip()
+    now = datetime.now()
+    
+    # Rate Limiting Check
+    if email_key in _failed_logins:
+        attempts, lockout_time = _failed_logins[email_key]
+        if attempts >= MAX_FAILED_ATTEMPTS:
+            if now < lockout_time:
+                raise HTTPException(status_code=429, detail="Demasiados intentos fallidos. Intenta más tarde.")
+            else:
+                del _failed_logins[email_key]
+
     try:
-        if datos.email.lower().strip() == settings.superadmin_email.lower().strip() and datos.password == settings.superadmin_password:
+        if email_key == settings.superadmin_email.lower().strip():
+            if not verificar_password(datos.password, settings.superadmin_password):
+                _record_failed_login(email_key)
+                raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+            
+            # Clear failures on success
+            _failed_logins.pop(email_key, None)
             token = crear_token({
                 "lavadero_id": 0,
                 "email": settings.superadmin_email,
@@ -147,12 +176,14 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
             if datos.email.lower().strip() == 'demo@aquawash.com' and datos.password == 'demo1234':
                 lavadero = await ensure_demo_account(db)
             else:
+                _record_failed_login(email_key)
                 raise HTTPException(status_code=401, detail="Credenciales incorrectas")
         
         if lavadero["auth_provider"] == "google" and not lavadero["password_hash"]:
             raise HTTPException(status_code=401, detail="Esta cuenta se registró con Google. Usa el botón de Google para iniciar sesión.")
             
         if not verificar_password(datos.password, lavadero["password_hash"]):
+            _record_failed_login(email_key)
             raise HTTPException(status_code=401, detail="Credenciales incorrectas")
             
         if lavadero["estado_suscripcion"] == "suspendido":
@@ -166,6 +197,7 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
             "plan":        lavadero["plan"],
             "rol":         "tenant"
         })
+        _failed_logins.pop(email_key, None)
         return {"access_token": token, "token_type": "bearer"}
     except HTTPException:
         raise
@@ -216,8 +248,8 @@ async def google_login(datos: GoogleLoginRequest, db=Depends(get_db)):
                 telefono=datos.telefono,
                 email=email.lower().strip(),
                 password_hash=pwd_hash,
-                pin_dueno=datos.pin_dueno.strip(),
-                pin_operario=datos.pin_operario.strip(),
+                pin_dueno=hashear_password(datos.pin_dueno.strip()),
+                pin_operario=hashear_password(datos.pin_operario.strip()),
                 plan="pro",
                 estado_suscripcion="trial",
                 trial_hasta=trial_hasta,
@@ -254,9 +286,9 @@ async def verify_pin(datos: PinVerifyRequest, db=Depends(get_db), lavadero_id: i
         
     pin_ingresado = datos.pin.strip()
     
-    if pin_ingresado == fila["pin_dueno"]:
+    if verificar_password(pin_ingresado, fila["pin_dueno"]):
         return {"rol": "dueno"}
-    elif pin_ingresado == fila["pin_operario"]:
+    elif verificar_password(pin_ingresado, fila["pin_operario"]):
         return {"rol": "operario"}
     else:
         raise HTTPException(status_code=401, detail="PIN Incorrecto")
@@ -283,8 +315,8 @@ async def registro(datos: RegisterRequest, db=Depends(get_db)):
         telefono=datos.telefono,
         email=datos.email.lower().strip(),
         password_hash=pwd_hash,
-        pin_dueno=datos.pin_dueno.strip(),
-        pin_operario=datos.pin_operario.strip(),
+        pin_dueno=hashear_password(datos.pin_dueno.strip()),
+        pin_operario=hashear_password(datos.pin_operario.strip()),
         plan=datos.plan,
         estado_suscripcion="trial",
         trial_hasta=trial_hasta,
@@ -324,7 +356,7 @@ async def forgot_password(datos: ForgotRequest, db=Depends(get_db)):
     try:
         await ensure_recovery_columns(db)
 
-        token = f"{secrets.randbelow(10**6):06d}"
+        token = secrets.token_hex(32)
         expires = datetime.now() + timedelta(minutes=10)
         
         await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
@@ -356,7 +388,7 @@ async def forgot_pins(datos: ForgotRequest, db=Depends(get_db)):
     try:
         await ensure_recovery_columns(db)
 
-        token = f"{secrets.randbelow(10**6):06d}"
+        token = secrets.token_hex(32)
         expires = datetime.now() + timedelta(minutes=10)
         
         await db.execute("UPDATE lavaderos SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", token, expires, lavadero["id"])
@@ -416,6 +448,6 @@ async def reset_pins(datos: ResetPinsRequest, db=Depends(get_db)):
         
     await db.execute(
         "UPDATE lavaderos SET pin_dueno = $1, pin_operario = $2, reset_token = NULL, reset_token_expires = NULL WHERE id = $3",
-        datos.new_pin_dueno.strip(), datos.new_pin_operario.strip(), lavadero["id"]
+        hashear_password(datos.new_pin_dueno.strip()), hashear_password(datos.new_pin_operario.strip()), lavadero["id"]
     )
     return {"mensaje": "PINs actualizados exitosamente."}

@@ -213,32 +213,42 @@ async def listar_lavados(
     Devuelve el historial con filtros opcionales.
     Paginado para no traer miles de registros de golpe.
     """
-    # Construir filtro de fecha según período
     filtros = {"hoy": "l.fecha = CURRENT_DATE",
                "semana": "l.fecha >= CURRENT_DATE - INTERVAL '7 days'",
                "mes": "l.fecha >= date_trunc('month', CURRENT_DATE)",
                "todo": "TRUE"}
     filtro_fecha = filtros[periodo]
 
-    filtro_tipo   = f"AND l.tipo_vehiculo = '{tipo}'" if tipo else ""
-    filtro_buscar = f"AND (l.placa ILIKE '%{buscar}%')" if buscar else ""
-    filtro_estado = f"AND l.estado_actual = '{estado}'" if estado else ""
-    offset        = (pagina - 1) * limite
+    query_parts = ["l.lavadero_id = $1", filtro_fecha]
+    params = [lavadero_id]
 
-    filas = await db.fetch(
-        f"""
+    if tipo:
+        params.append(tipo)
+        query_parts.append(f"l.tipo_vehiculo = ${len(params)}")
+        
+    if buscar:
+        params.append(f"%{buscar}%")
+        query_parts.append(f"l.placa ILIKE ${len(params)}")
+        
+    if estado:
+        params.append(estado)
+        query_parts.append(f"l.estado_actual = ${len(params)}")
+
+    where_clause = " AND ".join(query_parts)
+    offset = (pagina - 1) * limite
+    
+    params.extend([limite, offset])
+    limite_idx = len(params) - 1
+    offset_idx = len(params)
+
+    query = f"""
         SELECT l.*, e.nombre AS empleado_nombre FROM lavados l
         LEFT JOIN empleados e ON l.empleado_id = e.id
-        WHERE l.lavadero_id = $1
-          AND {filtro_fecha}
-          {filtro_tipo}
-          {filtro_buscar}
-          {filtro_estado}
+        WHERE {where_clause}
         ORDER BY l.fecha DESC, l.hora_ingreso DESC
-        LIMIT $2 OFFSET $3
-        """,
-        lavadero_id, limite, offset
-    )
+        LIMIT ${limite_idx} OFFSET ${offset_idx}
+    """
+    filas = await db.fetch(query, *params)
     return [parse_lavado(f) for f in filas]
 
 

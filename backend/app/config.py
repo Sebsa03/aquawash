@@ -20,7 +20,7 @@ class Settings:
     
     # Superadmin
     superadmin_email: str = os.getenv("SUPERADMIN_EMAIL", "admin@aquawash.com")
-    superadmin_password: str = os.getenv("SUPERADMIN_PASSWORD", "SuperAdmin2026*")
+    superadmin_password: str = os.getenv("SUPERADMIN_PASSWORD", "$2b$12$QIpsBytJ1cigKsgEuRqq5eDLI.EeGd/OKrOQC4Pi4t40rPs98lATu")
 
 settings = Settings()
 
