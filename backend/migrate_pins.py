@@ -10,15 +10,16 @@ load_dotenv()
 async def migrate_pins():
     print("Iniciando migración de PINs a bcrypt...")
     
-    conn = await asyncpg.connect(
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME"),
-        host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432")
-    )
-    
     try:
+        # Paso 1: Alterar la tabla en una conexión separada para evitar errores de caché en asyncpg
+        conn_alter = await asyncpg.connect(settings.database_url)
+        print("Ampliando columnas pin_dueno y pin_operario a VARCHAR(255)...")
+        await conn_alter.execute("ALTER TABLE lavaderos ALTER COLUMN pin_dueno TYPE VARCHAR(255);")
+        await conn_alter.execute("ALTER TABLE lavaderos ALTER COLUMN pin_operario TYPE VARCHAR(255);")
+        await conn_alter.close()
+
+        # Paso 2: Ejecutar la migración de datos
+        conn = await asyncpg.connect(settings.database_url, statement_cache_size=0)
         lavaderos = await conn.fetch("SELECT id, pin_dueno, pin_operario FROM lavaderos")
         count = 0
         
@@ -47,10 +48,9 @@ async def migrate_pins():
                 count += 1
                 
         print(f"Migración completada. {count} lavaderos actualizados.")
+        await conn.close()
     except Exception as e:
         print(f"Error durante migración: {e}")
-    finally:
-        await conn.close()
 
 if __name__ == "__main__":
     asyncio.run(migrate_pins())
