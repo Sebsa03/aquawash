@@ -154,7 +154,9 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
 
     try:
         if email_key == settings.superadmin_email.lower().strip():
-            if not verificar_password(datos.password, settings.superadmin_password_hash):
+            # Hashear la contraseña del superadmin si está en texto plano
+            superadmin_hash = settings.superadmin_password if settings.superadmin_password.startswith("$2b$") else hashear_password(settings.superadmin_password)
+            if not verificar_password(datos.password, superadmin_hash):
                 _record_failed_login(email_key)
                 raise HTTPException(status_code=401, detail="Credenciales incorrectas")
             
