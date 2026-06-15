@@ -105,7 +105,7 @@ def send_recovery_email(to_email: str, subject: str, html_content: str):
 async def ensure_demo_account(db):
     email = "demo@aquawash.com"
     demo = await db.fetchrow(
-        "SELECT id, email, plan, estado_suscripcion FROM lavaderos WHERE email = $1",
+        "SELECT id, email, password_hash, plan, estado_suscripcion, auth_provider FROM lavaderos WHERE email = $1",
         email
     )
     if demo:
@@ -154,7 +154,7 @@ async def login(datos: LoginRequest, db=Depends(get_db)):
 
     try:
         if email_key == settings.superadmin_email.lower().strip():
-            if not verificar_password(datos.password, settings.superadmin_password):
+            if not verificar_password(datos.password, settings.superadmin_password_hash):
                 _record_failed_login(email_key)
                 raise HTTPException(status_code=401, detail="Credenciales incorrectas")
             
