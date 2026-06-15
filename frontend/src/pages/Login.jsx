@@ -31,8 +31,10 @@ export default function Login() {
   async function handleGoogleSuccess(response) {
     setGoogleError(null)
     setGoogleLoading(true)
+    // useGoogleLogin (auth-code flow) entrega { code }, no { credential }
+    const credential = response.credential ?? response.code ?? null
     try {
-      const data = await googleLogin(response.credential)
+      const data = await googleLogin(credential)
       if (data?.access_token) {
         setAuthToken(data.access_token)
         if (data.email?.toLowerCase() === 'admin@aquawash.com') {
@@ -43,7 +45,7 @@ export default function Login() {
         return
       }
       if (data?.needs_more_data) {
-        navigate('/registro', { state: { google: { credential: response.credential, email: data.email, name: data.name } } })
+        navigate('/registro', { state: { google: { credential, email: data.email, name: data.name } } })
         return
       }
       setGoogleError('No se pudo iniciar sesión con Google. Intenta nuevamente.')

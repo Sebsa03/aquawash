@@ -96,9 +96,11 @@ export default function Register() {
     setError(null)
     setSuccess(null)
     setGoogleLoading(true)
+    // useGoogleLogin (auth-code flow) entrega { code }, no { credential }
+    const credential = response.credential ?? response.code ?? null
 
     try {
-      const data = await googleLogin(response.credential)
+      const data = await googleLogin(credential)
       if (data?.access_token) {
         setAuthToken(data.access_token)
         navigate('/app/dashboard')
@@ -107,7 +109,7 @@ export default function Register() {
 
       if (data?.needs_more_data) {
         setNeedsGoogleComplete(true)
-        setGoogleCredential(response.credential)
+        setGoogleCredential(credential)
         setForm(prev => ({
           ...prev,
           email: data.email || prev.email,
