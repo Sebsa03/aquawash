@@ -24,7 +24,6 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) 
 
 
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,6 +32,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SlowAPIMiddleware)
 
 # Global Exception Handler
 @app.exception_handler(Exception)
