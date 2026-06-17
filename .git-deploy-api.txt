@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'https://aquawash-cvu5.vercel.app'
+﻿const BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const getToken = () => localStorage.getItem('aw_token')
 
@@ -6,7 +6,7 @@ async function request(method, path, body = null) {
   const headers = { 'Content-Type': 'application/json' }
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
-  
+
   let res
   try {
     res = await fetch(`${BASE}${path}`, {
@@ -15,7 +15,7 @@ async function request(method, path, body = null) {
       body: body ? JSON.stringify(body) : null,
     })
   } catch (fetchError) {
-    throw new Error('No se puede conectar con el backend. Verifica que VITE_API_URL esté correcto y que el servidor esté activo.')
+    throw new Error('No se puede conectar con el backend. Verifica que VITE_API_URL est├® correcto y que el servidor est├® activo.')
   }
 
   if (res.status === 401) {
@@ -42,8 +42,6 @@ export const forgotPassword = (email) =>
   request('POST', '/auth/forgot-password', { email })
 export const forgotPins = (email) =>
   request('POST', '/auth/forgot-pins', { email })
-export const verifyResetCode = (token) =>
-  request('POST', '/auth/verify-reset-code', { token })
 export const resetPassword = ({ token, new_password }) =>
   request('POST', '/auth/reset-password', { token, new_password })
 export const resetPins = ({ token, new_pin_dueno, new_pin_operario }) =>
@@ -74,7 +72,7 @@ export const crearAdicional      = (nombre, precio) => request('POST', '/adicion
 export const actualizarAdicional = (id, precio)     => request('PATCH', `/adicionales/${id}`, { precio })
 export const eliminarAdicional   = (id)             => request('DELETE', `/adicionales/${id}`)
 
-// ESTADÍSTICAS
+// ESTAD├ìSTICAS
 export const getEstadisticasHoy = ()        => request('GET', '/estadisticas/hoy')
 export const getResumen         = (periodo) => request('GET', `/estadisticas/resumen?periodo=${periodo}`)
 export const getPorTipo         = (periodo) => request('GET', `/estadisticas/por-tipo?periodo=${periodo}`)
@@ -91,7 +89,7 @@ export const getPlacas          = (buscar = '') => request('GET', `/estadisticas
 export const registro = (datos) =>
   request('POST', '/auth/registro', datos)
 
-// CONFIG / VEHÍCULOS CATÁLOGO
+// CONFIG / VEH├ìCULOS CAT├üLOGO
 export const getConfig           = ()              => request('GET',    '/config/')
 export const getVehiculos        = ()              => request('GET',    '/config/vehiculos')
 export const crearVehiculo       = (data)          => request('POST',   '/config/vehiculos', data)
@@ -125,7 +123,7 @@ export const crearProducto = (data) => request('POST', '/inventario/productos', 
 export const editarProducto = (id, data) => request('PATCH', `/inventario/productos/${id}`, data)
 export const eliminarProducto = (id) => request('DELETE', `/inventario/productos/${id}`)
 
-// RECETAS (AUTOMATIZACIÓN)
+// RECETAS (AUTOMATIZACI├ôN)
 export const getRecetas = () => request('GET', '/inventario/recetas')
 export const crearReceta = (data) => request('POST', '/inventario/recetas', data)
 export const eliminarReceta = (id) => request('DELETE', `/inventario/recetas/${id}`)

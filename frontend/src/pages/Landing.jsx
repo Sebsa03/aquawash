@@ -1,18 +1,18 @@
 import { useNavigate } from 'react-router-dom'
 
 const features = [
-  { icon: '🚿', title: 'Registro rápido',        desc: 'Registra un lavado en segundos. El precio se calcula solo.' },
+  { icon: '🚿', title: 'Registro rápido', desc: 'Registra un lavado en segundos. El precio se calcula solo.' },
   { icon: '📊', title: 'Estadísticas en tiempo real', desc: 'Ve cuánto llevas hoy, esta semana y este mes. Sin Excel.' },
-  { icon: '👷', title: 'Ranking de empleados',    desc: 'Sabe quién está lavando más y generando más ingresos.' },
-  { icon: '🚗', title: 'Clientes frecuentes',     desc: 'Identifica placas que regresan seguido automáticamente.' },
-  { icon: '🔒', title: 'Acceso seguro',            desc: 'Cada lavadero tiene sus propias credenciales.' },
-  { icon: '📱', title: 'Cualquier dispositivo',   desc: 'Celular, tablet o computador. Solo necesitas un navegador.' },
+  { icon: '👷', title: 'Ranking de empleados', desc: 'Sabe quién está lavando más y generando más ingresos.' },
+  { icon: '🚗', title: 'Clientes frecuentes', desc: 'Identifica placas que regresan seguido automáticamente.' },
+  { icon: '🔒', title: 'Acceso seguro', desc: 'Cada lavadero tiene sus propias credenciales.' },
+  { icon: '📱', title: 'Cualquier dispositivo', desc: 'Celular, tablet o computador. Solo necesitas un navegador.' },
 ]
 
 const steps = [
-  { num: '01', icon: '📝', title: 'Crea tu cuenta',         desc: 'Regístrate con tu correo. Listo en 2 minutos.' },
-  { num: '02', icon: '⚙️', title: 'Configura tus precios',  desc: 'Define cuánto cobras por tipo de vehículo.' },
-  { num: '03', icon: '🚿', title: 'Empieza a registrar',    desc: 'Agrega empleados y registra desde cualquier dispositivo.' },
+  { num: '01', icon: '📝', title: 'Crea tu cuenta', desc: 'Regístrate con tu correo. Listo en 2 minutos.' },
+  { num: '02', icon: '⚙️', title: 'Configura tus precios', desc: 'Define cuánto cobras por tipo de vehículo.' },
+  { num: '03', icon: '🚿', title: 'Empieza a registrar', desc: 'Agrega empleados y registra desde cualquier dispositivo.' },
 ]
 
 export default function Landing() {
@@ -97,9 +97,9 @@ export default function Landing() {
         {/* Stats */}
         <div style={{ display: 'flex', gap: 32, justifyContent: 'center', marginTop: 48, flexWrap: 'wrap' }}>
           {[
-            { v: '$0',    l: 'Para empezar' },
+            { v: '$0', l: 'Para empezar' },
             { v: '7 días', l: 'Prueba gratis' },
-            { v: '100%',  l: 'Web — sin instalar' },
+            { v: '100%', l: 'Web — sin instalar' },
             { v: 'Multi', l: 'Dispositivos' },
           ].map(s => (
             <div key={s.l} style={{ textAlign: 'center' }}>
@@ -177,9 +177,9 @@ export default function Landing() {
             }}>⭐ MÁS POPULAR</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '1.4rem', letterSpacing: 2, color: 'var(--acc)', marginBottom: 4 }}>Pro</div>
             <div style={{ fontSize: 12, color: 'var(--mut)', marginBottom: 10 }}>Para lavaderos que quieren crecer</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.2rem', color: 'var(--acc)', marginBottom: 2 }}>$75.000</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.2rem', color: 'var(--acc)', marginBottom: 2 }}>Prueba</div>
             <div style={{ fontSize: 12, color: 'var(--mut)', marginBottom: 16 }}>COP / mes</div>
-            {['Todo lo del plan Básico','Cierre de caja del día','Etiquetas de estado del vehículo','Exportación de datos (JSON)','Cliente frecuente ★','Soporte prioritario'].map(i => (
+            {['Todo lo del plan Básico', 'Cierre de caja del día', 'Etiquetas de estado del vehículo', 'Exportación de datos (JSON)', 'Cliente frecuente ★', 'Soporte prioritario'].map(i => (
               <div key={i} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ color: 'var(--acc3)', fontWeight: 700 }}>✓</span>{i}
               </div>
@@ -215,7 +215,7 @@ export default function Landing() {
         </div>
         <div style={{ fontSize: 12, color: 'var(--mut)' }}>© 2026 AquaWash. Todos los derechos reservados.</div>
         <div style={{ display: 'flex', gap: 16 }}>
-          {['Términos','Privacidad','Soporte'].map(l => (
+          {['Términos', 'Privacidad', 'Soporte'].map(l => (
             <span key={l} style={{ fontSize: 12, color: 'var(--mut)', cursor: 'pointer' }}>{l}</span>
           ))}
         </div>

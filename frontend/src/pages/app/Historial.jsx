@@ -11,24 +11,24 @@ import { STATUS_LIST as ESTADOS } from '../../utils/constants'
 export default function Historial() {
   const toast = useToast()
   const { role } = useAuth()
-  
+
   // Data State
   const [lavados, setLavados] = useState([])
   const [empleados, setEmpleados] = useState([])
   const [adicionales, setAdicionales] = useState([])
-  
+
   // UI State
   const [loading, setLoading] = useState(true)
   const [modoVisual, setModoVisual] = useState('monitor') // 'monitor' | 'historial'
-  const [buscar, setBuscar]   = useState('')
-  const [tipo, setTipo]       = useState('')
-  const [estado, setEstado]   = useState('')
+  const [buscar, setBuscar] = useState('')
+  const [tipo, setTipo] = useState('')
+  const [estado, setEstado] = useState('')
   const [periodo, setPeriodo] = useState('hoy')
-  
+
   // Modal State
-  const [editando, setEditando]       = useState(null)
-  const [form, setForm]               = useState({})
-  const [selAdd, setSelAdd]           = useState({})
+  const [editando, setEditando] = useState(null)
+  const [form, setForm] = useState({})
+  const [selAdd, setSelAdd] = useState({})
   const [cancelModal, setCancelModal] = useState(null) // { id, nuevoEstado }
 
   const cargar = useCallback(async () => {
@@ -79,7 +79,7 @@ export default function Historial() {
       setLavados(prev => prev.map(l => (l.id === id ? res : l)))
       toast?.(`Lavado ${nuevoEstado}`)
     } catch (e) {
-      toast?.('Error actualizando estado')
+      toast?.('Error actualizando estado / Ya se Cerro caja')
     }
   }
 
@@ -92,7 +92,7 @@ export default function Historial() {
       empleado_id: lavado.empleado_id || '',
       nota: lavado.nota || ''
     })
-    
+
     const inicialAdics = {}
     if (lavado.adicionales_aplicados) {
       lavado.adicionales_aplicados.forEach(a => inicialAdics[a.id] = true)
@@ -109,7 +109,7 @@ export default function Historial() {
         empleado_id: form.empleado_id ? Number(form.empleado_id) : null,
         adicionales_aplicados: adicsSeleccionados
       }
-      
+
       const res = await actualizarLavado(editando.id, data)
       setLavados(prev => prev.map(l => l.id === editando.id ? res : l))
       setEditando(null)
@@ -124,8 +124,8 @@ export default function Historial() {
     if (!buscar) return true
     const q = buscar.toLowerCase()
     return l.placa.toLowerCase().includes(q) ||
-           (l.cliente_nombre && l.cliente_nombre.toLowerCase().includes(q)) ||
-           (l.cliente_telefono && l.cliente_telefono.includes(q))
+      (l.cliente_nombre && l.cliente_nombre.toLowerCase().includes(q)) ||
+      (l.cliente_telefono && l.cliente_telefono.includes(q))
   })
 
   const fTime = (timeStr) => timeStr ? String(timeStr).slice(0, 5) : '--:--'
@@ -198,8 +198,8 @@ export default function Historial() {
 
     // Fila 5: Cabeceras
     const headers = [
-      'FECHA', 'INGRESO', 'ENTREGA', 'PLACA', 'VEHÍCULO', 'SUBCATEGORÍA', 
-      'ESTADO', 'SUCIEDAD', 'BASE ($)', 'ADICIONALES ($)', 'TOTAL ($)', 
+      'FECHA', 'INGRESO', 'ENTREGA', 'PLACA', 'VEHÍCULO', 'SUBCATEGORÍA',
+      'ESTADO', 'SUCIEDAD', 'BASE ($)', 'ADICIONALES ($)', 'TOTAL ($)',
       'OPERARIO', 'CLIENTE', 'TELÉFONO', 'MÉTODO DE PAGO', 'SERVICIOS ADICIONALES', 'NOTAS', 'MOTIVO CANCELACIÓN'
     ]
     const headerRow = sheet.getRow(5)
@@ -210,14 +210,14 @@ export default function Historial() {
       cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFF8FAFC' } }
       cell.alignment = { vertical: 'middle', horizontal: 'center' }
       cell.border = {
-        top: {style:'medium', color: {argb:'FF0F172A'}},
-        bottom: {style:'medium', color: {argb:'FF0F172A'}},
-        left: {style:'thin', color: {argb:'FF334155'}},
-        right: {style:'thin', color: {argb:'FF334155'}}
+        top: { style: 'medium', color: { argb: 'FF0F172A' } },
+        bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+        left: { style: 'thin', color: { argb: 'FF334155' } },
+        right: { style: 'thin', color: { argb: 'FF334155' } }
       }
     })
     headerRow.height = 30
-    
+
     sheet.autoFilter = `B5:${lastColStr}5`
 
     // Datos
@@ -248,16 +248,16 @@ export default function Historial() {
 
       row.height = 24
       const isZebra = index % 2 === 0
-      
+
       for (let i = 2; i <= columns.length + 1; i++) {
         const cell = row.getCell(i)
         cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF334155' } }
         cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
-        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: {style:'thin', color:{argb:'FFF1F5F9'}}, right:{style:'thin', color:{argb:'FFF1F5F9'}} }
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFF1F5F9' } }, right: { style: 'thin', color: { argb: 'FFF1F5F9' } } }
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isZebra ? 'FFFFFFFF' : 'FFF8FAFC' } }
-        
+
         // Centrados
-        if ([2,3,4,8,9].includes(i)) cell.alignment = { ...cell.alignment, horizontal: 'center' }
+        if ([2, 3, 4, 8, 9].includes(i)) cell.alignment = { ...cell.alignment, horizontal: 'center' }
 
         // Placa
         if (i === 5) cell.font = { name: 'Consolas', bold: true, color: { argb: 'FF0F172A' }, size: 11 }
@@ -271,7 +271,7 @@ export default function Historial() {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isZebra ? 'FFF1F5F9' : 'FFE2E8F0' } }
           }
         }
-        
+
         // Estados
         if (i === 8) {
           const val = cell.value
@@ -324,21 +324,21 @@ export default function Historial() {
           <form onSubmit={saveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: 4, color: 'var(--mut)', fontSize: '0.85rem' }}>Placa</label>
-              <input required value={form.placa} onChange={e => setForm(f => ({...f, placa: e.target.value}))}
+              <input required value={form.placa} onChange={e => setForm(f => ({ ...f, placa: e.target.value }))}
                 style={{ width: '100%', padding: '0.8rem', borderRadius: 8, background: 'var(--sur2)', border: '1px solid var(--brd)', color: 'var(--txt)' }}
               />
             </div>
-            
+
             <div className="historial-edit-dueno" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <div style={{ flex: '1 1 150px' }}>
                 <label style={{ display: 'block', marginBottom: 4, color: 'var(--mut)', fontSize: '0.85rem' }}>Dueño</label>
-                <input value={form.cliente_nombre} onChange={e => setForm(f => ({...f, cliente_nombre: e.target.value}))}
+                <input value={form.cliente_nombre} onChange={e => setForm(f => ({ ...f, cliente_nombre: e.target.value }))}
                   style={{ width: '100%', padding: '0.8rem', borderRadius: 8, background: 'var(--sur2)', border: '1px solid var(--brd)', color: 'var(--txt)' }}
                 />
               </div>
               <div style={{ flex: '1 1 150px' }}>
                 <label style={{ display: 'block', marginBottom: 4, color: 'var(--mut)', fontSize: '0.85rem' }}>Teléfono</label>
-                <input value={form.cliente_telefono} onChange={e => setForm(f => ({...f, cliente_telefono: e.target.value}))}
+                <input value={form.cliente_telefono} onChange={e => setForm(f => ({ ...f, cliente_telefono: e.target.value }))}
                   style={{ width: '100%', padding: '0.8rem', borderRadius: 8, background: 'var(--sur2)', border: '1px solid var(--brd)', color: 'var(--txt)' }}
                 />
               </div>
@@ -346,7 +346,7 @@ export default function Historial() {
 
             <div>
               <label style={{ display: 'block', marginBottom: 4, color: 'var(--mut)', fontSize: '0.85rem' }}>Empleado</label>
-              <select value={form.empleado_id} onChange={e => setForm(f => ({...f, empleado_id: e.target.value}))}
+              <select value={form.empleado_id} onChange={e => setForm(f => ({ ...f, empleado_id: e.target.value }))}
                 style={{ width: '100%', padding: '0.8rem', borderRadius: 8, background: 'var(--sur2)', border: '1px solid var(--brd)', color: 'var(--txt)' }}>
                 <option value="">Selecciona Operario</option>
                 {empleados.map(emp => (
@@ -374,7 +374,7 @@ export default function Historial() {
 
             <div>
               <label style={{ display: 'block', marginBottom: 4, color: 'var(--mut)', fontSize: '0.85rem' }}>Nota</label>
-              <input value={form.nota} onChange={e => setForm(f => ({...f, nota: e.target.value}))}
+              <input value={form.nota} onChange={e => setForm(f => ({ ...f, nota: e.target.value }))}
                 style={{ width: '100%', padding: '0.8rem', borderRadius: 8, background: 'var(--sur2)', border: '1px solid var(--brd)', color: 'var(--txt)' }}
               />
             </div>
@@ -444,7 +444,7 @@ export default function Historial() {
                   fontFamily: "'Inter',sans-serif", transition: 'border-color 0.2s'
                 }}
                 onFocus={e => e.target.style.borderColor = 'var(--dan)'}
-                onBlur={e  => e.target.style.borderColor = 'rgba(255,71,87,0.4)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,71,87,0.4)'}
               />
 
               {/* Botones */}
@@ -484,17 +484,17 @@ export default function Historial() {
         <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 'clamp(1.6rem, 5vw, 2.2rem)', letterSpacing: 0.5, margin: 0, color: 'var(--acc)', textShadow: '0 0 15px rgba(0,212,255,0.3)' }}>
           {role === 'dueno' ? (modoVisual === 'monitor' ? '🟢 Operaciones en Vivo' : '📆 Archivo Histórico') : '📆 Historial de Lavados'}
         </h1>
-        
+
         {role === 'dueno' && (
           <div style={{ display: 'flex', gap: 8, background: 'rgba(0,0,0,0.3)', padding: 4, borderRadius: 8 }}>
-            <button 
-              className={`tab ${modoVisual === 'monitor' ? 'active' : ''}`} 
+            <button
+              className={`tab ${modoVisual === 'monitor' ? 'active' : ''}`}
               onClick={() => { setModoVisual('monitor'); setPeriodo('hoy'); }}
               style={{ padding: '6px 14px', fontSize: 13, border: 'none' }}>
               Monitor
             </button>
-            <button 
-              className={`tab ${modoVisual === 'historial' ? 'active' : ''}`} 
+            <button
+              className={`tab ${modoVisual === 'historial' ? 'active' : ''}`}
               onClick={() => { setModoVisual('historial'); setPeriodo('semana'); }}
               style={{ padding: '6px 14px', fontSize: 13, border: 'none' }}>
               Historial
@@ -513,23 +513,23 @@ export default function Historial() {
           onBlur={e => e.target.style.borderColor = 'var(--brd)'}
         />
         <select value={tipo} onChange={e => setTipo(e.target.value)} style={{ padding: '0.6rem', borderRadius: 8, border: '1px solid var(--brd)', background: 'rgba(255,255,255,0.05)', color: '#fff', outline: 'none', fontFamily: "'Inter', sans-serif" }}>
-          <option value="" style={{color:'#000'}}>Todos los vehículos</option>
-          <option value="moto" style={{color:'#000'}}>Moto</option>
-          <option value="carro" style={{color:'#000'}}>Carro</option>
-          <option value="furgon" style={{color:'#000'}}>Furgón</option>
-          <option value="camion" style={{color:'#000'}}>Camión</option>
-          <option value="bus" style={{color:'#000'}}>Bus</option>
+          <option value="" style={{ color: '#000' }}>Todos los vehículos</option>
+          <option value="moto" style={{ color: '#000' }}>Moto</option>
+          <option value="carro" style={{ color: '#000' }}>Carro</option>
+          <option value="furgon" style={{ color: '#000' }}>Furgón</option>
+          <option value="camion" style={{ color: '#000' }}>Camión</option>
+          <option value="bus" style={{ color: '#000' }}>Bus</option>
         </select>
         <select value={estado} onChange={e => setEstado(e.target.value)} style={{ minWidth: 140, padding: '0.6rem', borderRadius: 8, border: '1px solid var(--brd)', background: 'rgba(255,255,255,0.05)', color: '#fff', outline: 'none', fontFamily: "'Inter', sans-serif" }}>
-          <option value="" style={{color:'#000'}}>Todos los estados</option>
-          <option value="espera" style={{color:'#000'}}>En Espera</option>
-          <option value="lavando" style={{color:'#000'}}>Lavando</option>
-          <option value="terminado" style={{color:'#000'}}>Terminado</option>
-          <option value="entregado" style={{color:'#000'}}>Entregado</option>
-          <option value="cancelado" style={{color:'#000'}}>Cancelados</option>
+          <option value="" style={{ color: '#000' }}>Todos los estados</option>
+          <option value="espera" style={{ color: '#000' }}>En Espera</option>
+          <option value="lavando" style={{ color: '#000' }}>Lavando</option>
+          <option value="terminado" style={{ color: '#000' }}>Terminado</option>
+          <option value="entregado" style={{ color: '#000' }}>Entregado</option>
+          <option value="cancelado" style={{ color: '#000' }}>Cancelados</option>
         </select>
-        
-        <button onClick={exportToExcel} style={{ 
+
+        <button onClick={exportToExcel} style={{
           background: 'var(--acc)', color: '#000', fontWeight: 'bold',
           padding: '0.6rem 1rem', borderRadius: 8, border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto',
@@ -542,10 +542,10 @@ export default function Historial() {
       {(role !== 'dueno' || modoVisual === 'historial') && (
         <div className="tabs" style={{ marginBottom: '1.5rem' }}>
           {[
-            { v: 'hoy',    l: 'Hoy' },
+            { v: 'hoy', l: 'Hoy' },
             { v: 'semana', l: 'Última Semana' },
-            { v: 'mes',    l: 'Mes' },
-            { v: 'todo',   l: 'Todo' },
+            { v: 'mes', l: 'Mes' },
+            { v: 'todo', l: 'Todo' },
           ].map(t => (
             <button key={t.v} className={`tab ${periodo === t.v ? 'active' : ''}`}
               onClick={() => setPeriodo(t.v)}>
@@ -557,7 +557,7 @@ export default function Historial() {
 
       {(() => {
         if (filtrados.length === 0) return null;
-        
+
         const cTotal = filtrados.length;
         const cEspera = filtrados.filter(f => f.estado_actual === 'espera').length;
         const cLavando = filtrados.filter(f => f.estado_actual === 'lavando').length;
@@ -570,11 +570,11 @@ export default function Historial() {
           <div className="glass-panel" style={{ marginBottom: '1.5rem', padding: '1rem', width: '100%', overflow: 'hidden' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
               <span style={{ fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, color: '#fff', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)' }}>General: <strong>{cTotal}</strong></span>
-              <span style={{ fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, color: 'var(--mut)', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)' }}>⏳ Espera: <strong style={{color:'#fff'}}>{cEspera}</strong></span>
-              <span style={{ fontSize: 13, background: 'rgba(0,212,255,0.1)',   padding: '6px 12px', borderRadius: 20, color: 'var(--acc)', whiteSpace: 'nowrap', border: '1px solid rgba(0,212,255,0.2)' }}>💦 Lavando: <strong>{cLavando}</strong></span>
+              <span style={{ fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, color: 'var(--mut)', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)' }}>⏳ Espera: <strong style={{ color: '#fff' }}>{cEspera}</strong></span>
+              <span style={{ fontSize: 13, background: 'rgba(0,212,255,0.1)', padding: '6px 12px', borderRadius: 20, color: 'var(--acc)', whiteSpace: 'nowrap', border: '1px solid rgba(0,212,255,0.2)' }}>💦 Lavando: <strong>{cLavando}</strong></span>
               <span style={{ fontSize: 13, background: 'rgba(126,255,110,0.1)', padding: '6px 12px', borderRadius: 20, color: 'var(--acc3)', whiteSpace: 'nowrap', border: '1px solid rgba(126,255,110,0.2)' }}>✅ Terminado: <strong>{cTerminado}</strong></span>
               <span style={{ fontSize: 13, background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: 20, color: '#fff', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.2)' }}>🚗 Entregado: <strong>{cEntregado}</strong></span>
-              <span style={{ fontSize: 13, background: 'rgba(255,68,68,0.1)',   padding: '6px 12px', borderRadius: 20, color: 'var(--dan)', whiteSpace: 'nowrap', border: '1px solid rgba(255,68,68,0.2)' }}>🚫 Cancelado: <strong>{cCancelado}</strong></span>
+              <span style={{ fontSize: 13, background: 'rgba(255,68,68,0.1)', padding: '6px 12px', borderRadius: 20, color: 'var(--dan)', whiteSpace: 'nowrap', border: '1px solid rgba(255,68,68,0.2)' }}>🚫 Cancelado: <strong>{cCancelado}</strong></span>
               <span style={{ fontSize: '0.9rem', color: 'var(--mut)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
                 Total: <strong style={{ color: 'var(--acc3)', fontFamily: "'JetBrains Mono',monospace", fontSize: '1.2rem', marginLeft: 6, textShadow: '0 0 10px rgba(0,230,118,0.3)' }}>${fmt(totalDinero)}</strong>
               </span>
@@ -593,7 +593,7 @@ export default function Historial() {
             const isCancelado = l.estado_actual === 'cancelado'
             const isFinished = l.estado_actual === 'entregado'
             const indexEstadoActual = ESTADOS.findIndex(e => e.id === (l.estado_actual || 'espera'))
-            
+
             return (
               <div key={l.id} className="glass-panel" style={{
                 padding: '1.2rem',
@@ -606,8 +606,8 @@ export default function Historial() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <span style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: "'JetBrains Mono',monospace", textDecoration: isCancelado ? 'line-through' : 'none', color: '#fff' }}>{l.placa}</span>
-                    <span style={{ 
-                      fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20, 
+                    <span style={{
+                      fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20,
                       textTransform: 'uppercase', background: 'rgba(255,255,255,0.05)', color: 'var(--mut)',
                       border: '1px solid rgba(255,255,255,0.1)'
                     }}>
@@ -650,7 +650,7 @@ export default function Historial() {
                   </div>
                   {l.adicionales_aplicados?.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <span title="Adicionales">➕</span> 
+                      <span title="Adicionales">➕</span>
                       <span style={{ color: 'var(--txt)' }}>{l.adicionales_aplicados.map(a => a.nombre).join(', ')}</span>
                     </div>
                   )}
@@ -667,15 +667,15 @@ export default function Historial() {
                     <div style={{ color: 'var(--txt)', marginTop: '0.3rem', fontSize: '0.9rem' }}>Motivo: {l.motivo_cancelacion}</div>
                   </div>
                 ) : (
-                  <div style={{ 
-                    marginTop: '0.5rem', display: 'flex', alignItems: 'center', 
+                  <div style={{
+                    marginTop: '0.5rem', display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
                     background: 'rgba(0,0,0,0.2)', padding: '0.8rem', borderRadius: 8
                   }}>
                     {ESTADOS.filter(e => e.id !== 'cancelado').map((estado, idx) => {
                       const isCompleted = idx <= indexEstadoActual
                       const isCurrent = idx === indexEstadoActual
-                      
+
                       let horaStr = '--:--'
                       if (estado.id === 'espera') horaStr = fTime(l.hora_ingreso)
                       else if (estado.id === 'lavando') horaStr = fTime(l.hora_lavando)
@@ -684,7 +684,7 @@ export default function Historial() {
 
                       return (
                         <div key={estado.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '70px' }}>
-                          <button 
+                          <button
                             disabled={role === 'dueno'}
                             onClick={() => handleCambiarEstado(l.id, estado.id)}
                             style={{
@@ -695,7 +695,7 @@ export default function Historial() {
                               cursor: role === 'dueno' ? 'default' : 'pointer', transition: 'all 0.2s', width: '100%', maxWidth: '100px',
                               textTransform: 'uppercase', letterSpacing: 0.5,
                               opacity: role === 'dueno' && !isCurrent && !isCompleted ? 0.3 : 1
-                          }}>
+                            }}>
                             {estado.label}
                           </button>
                           <span style={{ marginTop: '0.4rem', fontSize: '0.75rem', fontFamily: "'JetBrains Mono',monospace", color: isCompleted ? 'var(--txt)' : 'var(--mut)' }}>
@@ -704,7 +704,7 @@ export default function Historial() {
                         </div>
                       )
                     })}
-                    
+
                     {role !== 'dueno' && (
                       <button onClick={() => handleCambiarEstado(l.id, 'cancelado')}
                         style={{
@@ -717,7 +717,7 @@ export default function Historial() {
                     )}
                   </div>
                 )}
-                
+
               </div>
             )
           })}

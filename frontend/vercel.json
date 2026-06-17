@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "VITE_API_URL": "@aquawash_api_url",
+    "VITE_GOOGLE_CLIENT_ID": "@aquawash_google_client_id"
+  }
+}
