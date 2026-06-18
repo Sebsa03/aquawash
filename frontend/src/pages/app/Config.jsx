@@ -6,6 +6,7 @@ import {
 } from '../../services/api'
 import { useToast } from '../../components/Toast'
 
+const EMOJIS = ['🚗','🏍️','🛻', '🚚', '🚛','🚜']
 
 export default function Config() {
   const toast = useToast()
